@@ -1,63 +1,54 @@
 # ==============================
-# Makefile for Terraform Project
+# Makefile (root-driven Terraform)
 # ==============================
 
-# Default Terraform settings
+ENV ?= dev
+TFVARS ?= envs/$(ENV)/terraform.tfvars
 TF := terraform
 
-# Colors for readability
 GREEN  := \033[0;32m
 YELLOW := \033[1;33m
 RESET  := \033[0m
 
-# If ENV is not provided, prompt the user interactively
-ifeq ($(strip $(ENV)),)
-ENV := $(shell read -p "🌎 Please enter environment (dev/test/prod): " env; echo $$env)
-endif
-
-TF_DIR ?= envs/$(ENV)
-TFVARS ?= $(TF_DIR)/terraform.tfvars
-BACKEND ?= $(TF_DIR)/backend.tfvars
-
-# ==============================
-# Terraform Core Commands
-# ==============================
-
-init:
-	@echo "$(YELLOW)🚀 Initializing Terraform for environment: $(ENV)$(RESET)"
-	@if [ -f "$(BACKEND)" ]; then \
-	  $(TF) -chdir=$(TF_DIR) init -backend-config="$(BACKEND)"; \
-	else \
-	  $(TF) -chdir=$(TF_DIR) init; \
+# Guard: require TFVARS to exist
+_guard_tfvars:
+	@if [ ! -f "$(TFVARS)" ]; then \
+		echo "$(YELLOW)Missing $(TFVARS). Create it or set ENV=<env>$(RESET)"; \
+		exit 1; \
 	fi
 
-plan:
-	@echo "$(YELLOW)🧩 Generating Terraform plan for environment: $(ENV)$(RESET)"
-	$(TF) -chdir=$(TF_DIR) plan \
-		-var-file="$(TFVARS)" \
-		-out="plan-$(ENV).tfplan"
+init:  ## terraform init at repo root
+	@echo "$(YELLOW)🚀 Initializing Terraform (root)$(RESET)"
+	$(TF) init
 
-apply:
-	@echo "$(GREEN)🚀 Applying Terraform changes for environment: $(ENV)$(RESET)"
-	$(TF) -chdir=$(TF_DIR) apply "plan-$(ENV).tfplan"
+plan: _guard_tfvars ## terraform plan using env tfvars
+	@echo "$(YELLOW)🧠 Planning for $(ENV)$(RESET)"
+	$(TF) plan -var-file=$(TFVARS) -out=plan-$(ENV).tfplan
 
-destroy:
-	@echo "$(YELLOW)💣 Destroying Terraform resources for environment: $(ENV)$(RESET)"
-	$(TF) -chdir=$(TF_DIR) destroy \
-		-var-file="$(TFVARS)" \
-		-auto-approve
+apply: ## apply last plan file
+	@echo "$(GREEN)🚀 Applying plan for $(ENV)$(RESET)"
+	$(TF) apply "plan-$(ENV).tfplan"
 
-validate:
-	@echo "$(YELLOW)🔍 Validating Terraform configuration for $(ENV)$(RESET)"
-	$(TF) -chdir=$(TF_DIR) validate
+destroy: _guard_tfvars ## destroy using env tfvars
+	@echo "$(YELLOW)💣 Destroying $(ENV)$(RESET)"
+	$(TF) destroy -var-file=$(TFVARS)
 
-fmt:
-	@echo "$(YELLOW)🧹 Formatting Terraform files$(RESET)"
-	$(TF) fmt -recursive
+validate: ## terraform validate (root)
+	@echo "$(YELLOW)🔍 Validating$(RESET)"
+	$(TF) validate
+
+clean: ## remove local artifacts
+	@echo "$(YELLOW)🧽 Cleaning$(RESET)"
+	rm -rf .terraform .terraform.lock.hcl plan-*.tfplan
 
 # ==============================
 # Quality & Docs
 # ==============================
+
+fmt: ## format
+	@echo "$(YELLOW)🧹 Formatting$(RESET)"
+	$(TF) fmt -recursive
+
 
 lint:
 	@echo "$(YELLOW)🔎 Running pre-commit hooks$(RESET)"
