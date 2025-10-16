@@ -17,7 +17,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
   }
 
@@ -30,6 +30,13 @@ provider "aws" {
   region = var.region
 }
 
+locals {
+  common_tags = {
+    Identifier  = var.identifier
+    Environment = var.environment
+    Owner       = var.owner
+  }
+}
 
 module "app" {
   source = "./modules/app"
@@ -48,5 +55,8 @@ module "security" {
 }
 
 module "vpc" {
-  source = "./modules/vpc"
+  source      = "./modules/vpc"
+  environment = var.environment
+  identifier  = var.identifier
+  common_tags = local.common_tags
 }

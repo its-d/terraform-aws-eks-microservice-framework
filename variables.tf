@@ -17,3 +17,18 @@ variable "region" {
   default     = "us-east-1"
   description = "AWS Region to be associated with the deployment."
 }
+
+variable "environment" {
+  type        = string
+  description = "The environment for the resources (e.g., dev, staging, prod)."
+}
+
+variable "owner" {
+  type        = string
+  description = "The owner of the resources."
+}
+
+variable "identifier" {
+  type        = string
+  description = "A unique identifier for the resources."
+}

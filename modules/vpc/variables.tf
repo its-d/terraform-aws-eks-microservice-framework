@@ -11,3 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# I need an AWS Module for a VPC with public and private subnets, NAT Gateway, and Internet Gateway.
+
+variable "environment" {
+  type        = string
+  description = "The environment for the resources (e.g., dev, staging, prod)."
+}
+
+variable "identifier" {
+  type        = string
+  description = "A unique identifier for the resources."
+}
+
+variable "common_tags" {
+  type        = map(string)
+  description = "A map of common tags to apply to all resources."
+  default     = {}
+}
