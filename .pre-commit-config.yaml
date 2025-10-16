@@ -1,3 +1,19 @@
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+
 repos:
   # --- General File Hygiene ---
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -49,3 +65,25 @@ repos:
     hooks:
       - id: check-jsonschema
         files: \.json$
+
+  # --- License Enforcement ---
+  - repo: local
+    hooks:
+      - id: add-apache-headers
+        name: Add/Update Apache-2.0 headers
+        entry: addlicense -f .license-header.txt
+        language: system
+        pass_filenames: true
+        types_or: [python, yaml, shell, terraform]
+        files: |
+          (?x)
+          ^.*\.(tf|tfvars|yaml|yml|py|sh)$
+        exclude: |
+          (?x)
+          ^(LICENSE|NOTICE|VERSION)$|
+          ^\.git/|
+          ^docs/|
+          ^envs/.*/\.gitkeep$|
+          ^modules/.*/\.gitkeep$|
+          ^\.venv/|
+          __pycache__
