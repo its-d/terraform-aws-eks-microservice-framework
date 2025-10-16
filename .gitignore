@@ -1,0 +1,66 @@
+# --- TERRAFORM ---
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.tfvars
+*.tfvars.json
+terraform.tfplan
+.terraformrc
+terraform.rc
+
+# --- PYTHON (if using helper scripts) ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.eggs/
+dist/
+build/
+.env
+venv/
+.venv/
+
+# --- LOGS & TEMP ---
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+
+# --- CI / LOCAL ENVIRONMENT ---
+.envrc
+.local/
+*.hcl
+*.lock.hcl
+.idea/
+.vscode/
+*.code-workspace
+
+# --- DOCUMENTATION / OUTPUT ---
+*.zip
+*.tar.gz
+*.out
+
+# --- SENSITIVE CONFIGS ---
+secrets.*
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.jks
+
+# --- OS-SPECIFIC ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*DS_Store*

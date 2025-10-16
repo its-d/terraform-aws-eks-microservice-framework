@@ -1,0 +1,43 @@
+name: Terraform Validate
+
+on:
+  push:
+    paths:
+      - '**/*.tf'
+      - '.github/workflows/terraform-validate.yml'
+  pull_request:
+    paths:
+      - '**/*.tf'
+      - '.github/workflows/terraform-validate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env_dir: [dev, staging, prod]   # adjust to match envs you actually use
+    steps:
+      - name: Checkout
+      # v4 = latest as of now
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+
+      - name: Terraform fmt (repo-wide, check only)
+        working-directory: .
+        run: terraform fmt -check -recursive
+
+      - name: Init (backend disabled)
+        working-directory: envs/${{ matrix.env_dir }}
+        run: terraform init -backend=false
+
+      - name: Validate
+        working-directory: envs/${{ matrix.env_dir }}
+        run: terraform validate
