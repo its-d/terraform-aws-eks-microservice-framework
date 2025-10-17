@@ -11,3 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+output "vpc_id" {
+  description = "The ID of the VPC"
+  value       = module.vpc.default_vpc_id
+}
+
+
+output "public_subnet_ids" {
+  description = "List of public subnet IDs"
+  value       = module.vpc.public_subnets
+}
+
+output "private_subnet_ids" {
+  description = "List of private subnet IDs"
+  value       = module.vpc.private_subnets
+}
