@@ -20,6 +20,9 @@ _guard_tfvars:
 init:  ## terraform init at repo root
 	@echo "$(YELLOW)🚀 Initializing Terraform (root)$(RESET)"
 	$(TF) init
+	cd modules/iam && $(TF) init
+	cd modules/vpc %% $(TF) init
+	cd modules/eks && $(TF) init
 
 plan: _guard_tfvars ## terraform plan using env tfvars
 	@echo "$(YELLOW)🧠 Planning for $(ENV)$(RESET)"
