@@ -11,3 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+variable "common_tags" {
+  type        = map(string)
+  description = "A map of common tags to apply to all resources."
+  default     = {}
+}
+
+variable "private_subnet_ids" {
+  type        = list(string)
+  description = "A list of subnet IDs for the EKS cluster."
+}
+
+variable "identifier" {
+  type        = string
+  description = "A unique identifier for the resources."
+}
+
+variable "cluster_role_arn" {
+  type        = string
+  description = "The ARN of the IAM role for the EKS cluster."
+}

@@ -11,3 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+output "eks_cluster_role_arn" {
+  description = "The ARN of the EKS cluster IAM role."
+  value       = aws_iam_role.eks_cluster_role.arn
+}
+
+output "eks_pod_execution_role" {
+  description = "The ARN of the EKS node IAM role."
+  value       = aws_iam_role.eks_pod_execution_role.arn
+}

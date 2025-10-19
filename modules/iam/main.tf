@@ -20,61 +20,71 @@
 #   tags = var.common_tags
 # }
 
-module "cluster_role" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-role"
-  version = ">= 6.2.1"
 
-  name = "eks_cluster_role"
+data "aws_iam_policy_document" "eks_cluster_iam_policy_document" {
+  statement {
+    effect = "Allow"
 
-  trust_policy_permissions = {
-    TrustRoleAndServiceToAssume = {
-      principals = [{
-        type = "Service"
-        identifiers = [
-          "eks.amazonaws.com",
-        ]
-      }]
-      condition = []
+    principals {
+      type        = "Service"
+      identifiers = ["eks.amazonaws.com"]
     }
+
+    actions = ["sts:AssumeRole"]
+
   }
 
-  policies = {
-    AmazonEKSClusterPolicy          = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-    AmazonEKS_VPCResourceController = "arn:aws:iam::aws:policy/AmazonEKS_VPCResourceController"
-  }
-
-  tags = var.common_tags
 }
 
-# module "node_role" {
-#   source = "terraform-aws-modules/iam/aws//modules/iam-role"
+resource "aws_iam_role" "eks_cluster_role" {
+  name               = "eks_cluster_role"
+  assume_role_policy = data.aws_iam_policy_document.eks_cluster_iam_policy_document.json
+  tags               = var.common_tags
+}
 
-#   name = "example"
+resource "aws_iam_role_policy_attachment" "eks_cluster_AmazonEKSClusterPolicy" {
+  role       = aws_iam_role.eks_cluster_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+}
 
-#   trust_policy_permissions = {
-#     TrustRoleAndServiceToAssume = {
-#       principals = [{
-#         type = "AWS"
-#         identifiers = [
-#           "arn:aws:iam::835367859851:user/anton",
-#         ]
-#       }]
-#       condition = [{
-#         test     = "StringEquals"
-#         variable = "sts:ExternalId"
-#         values   = ["some-secret-id"]
-#       }]
-#     }
-#   }
+resource "aws_iam_role_policy_attachment" "eks_cluster_AmazonEKS_VPCResourceController" {
+  role       = aws_iam_role.eks_cluster_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_VPCResourceController"
 
-#   policies = {
-#     AmazonCognitoReadOnly      = "arn:aws:iam::aws:policy/AmazonCognitoReadOnly"
-#     AlexaForBusinessFullAccess = "arn:aws:iam::aws:policy/AlexaForBusinessFullAccess"
-#     custom                     = aws_iam_policy.this.arn
-#   }
+}
 
-#   tags = var.common_tags
-# }
+data "aws_iam_policy_document" "eks_pod_execution_role_iam_policy_document" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["eks-fargate-pods.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+
+}
+
+resource "aws_iam_role" "eks_pod_execution_role" {
+  name               = "eks_pod_execution_role"
+  assume_role_policy = data.aws_iam_policy_document.eks_pod_execution_role_iam_policy_document.json
+  tags               = var.common_tags
+}
+
+
+resource "aws_iam_role_policy_attachment" "eks_node_AmazonEKSFargatePodExecutionRolePolicy" {
+  role       = aws_iam_role.eks_pod_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "eks_node_CloudWatchAgentServerPolicy" {
+  role       = aws_iam_role.eks_pod_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+
+}
+
 
 # module "alb_controller_irsa" {
 #   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"

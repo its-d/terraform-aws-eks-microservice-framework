@@ -43,7 +43,11 @@ module "app" {
 }
 
 module "eks" {
-  source = "./modules/eks/"
+  source             = "./modules/eks/"
+  identifier         = var.identifier
+  common_tags        = local.common_tags
+  private_subnet_ids = module.vpc.private_subnet_ids
+  cluster_role_arn   = module.iam.eks_cluster_role_arn
 }
 
 module "iam" {

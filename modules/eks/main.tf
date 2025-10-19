@@ -11,3 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+resource "aws_eks_cluster" "eks_cluster" {
+  name     = "${var.identifier}-${var.identifier}-eks-cluster"
+  role_arn = var.cluster_role_arn
+
+  vpc_config {
+    subnet_ids = var.private_subnet_ids
+  }
+
+  tags = var.common_tags
+}
