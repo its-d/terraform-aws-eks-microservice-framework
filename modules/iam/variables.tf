@@ -16,3 +16,14 @@ variable "common_tags" {
   description = "A map of common tags to apply to all resources."
   default     = {}
 }
+
+variable "oidc_issuer_url" {
+  type        = string
+  description = "OIDC issuer URL for the EKS cluster."
+
+}
+
+variable "identifier" {
+  type        = string
+  description = "A unique identifier for the resources."
+}

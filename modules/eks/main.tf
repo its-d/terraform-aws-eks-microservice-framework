@@ -22,3 +22,13 @@ resource "aws_eks_cluster" "eks_cluster" {
 
   tags = var.common_tags
 }
+
+resource "aws_eks_fargate_profile" "fargate_profile" {
+  cluster_name           = aws_eks_cluster.eks_cluster.name
+  fargate_profile_name   = "${var.identifier}-fargate-profile"
+  pod_execution_role_arn = var.pod_execution_role_arn
+  subnet_ids             = var.private_subnet_ids
+  selector {
+    namespace = "default"
+  }
+}

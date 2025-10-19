@@ -15,6 +15,10 @@
 terraform {
   required_version = ">= 1.5.0"
   required_providers {
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
     aws = {
       source  = "hashicorp/aws"
       version = "~> 6.0"
@@ -43,15 +47,18 @@ module "app" {
 }
 
 module "eks" {
-  source             = "./modules/eks/"
-  identifier         = var.identifier
-  common_tags        = local.common_tags
-  private_subnet_ids = module.vpc.private_subnet_ids
-  cluster_role_arn   = module.iam.eks_cluster_role_arn
+  source                 = "./modules/eks/"
+  identifier             = var.identifier
+  common_tags            = local.common_tags
+  private_subnet_ids     = module.vpc.private_subnet_ids
+  cluster_role_arn       = module.iam.eks_cluster_role_arn
+  pod_execution_role_arn = module.iam.eks_pod_execution_role
 }
 
 module "iam" {
-  source = "./modules/iam"
+  source          = "./modules/iam"
+  oidc_issuer_url = module.eks.oidc_issuer_url
+  identifier      = var.identifier
 }
 
 module "security" {

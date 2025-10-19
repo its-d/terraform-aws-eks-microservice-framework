@@ -31,3 +31,9 @@ variable "cluster_role_arn" {
   type        = string
   description = "The ARN of the IAM role for the EKS cluster."
 }
+
+variable "pod_execution_role_arn" {
+  type        = string
+  description = "The ARN of the IAM role for EKS pod execution."
+
+}
