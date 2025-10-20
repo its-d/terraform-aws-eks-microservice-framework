@@ -11,19 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 variable "common_tags" {
   type        = map(string)
-  description = "A map of common tags to apply to all resources."
+  description = "Common tags"
   default     = {}
-}
-
-variable "oidc_issuer_url" {
-  type        = string
-  description = "OIDC issuer URL for the EKS cluster."
-
-}
-
-variable "identifier" {
-  type        = string
-  description = "A unique identifier for the resources."
 }

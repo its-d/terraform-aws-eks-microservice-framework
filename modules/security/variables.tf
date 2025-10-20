@@ -11,3 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+variable "vpc_id" {
+  description = "VPC ID where the NLB will live"
+  type        = string
+}
+
+variable "identifier" {
+  description = "Identifier/name prefix"
+  type        = string
+}
+
+variable "common_tags" {
+  description = "Common tags"
+  type        = map(string)
+  default     = {}
+}
+
+variable "allowed_cidrs" {
+  description = "CIDR blocks allowed to reach the NLB (HTTP)"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}

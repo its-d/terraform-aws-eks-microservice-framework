@@ -12,63 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-data "tls_certificate" "eks_oidc" {
-  url = var.oidc_issuer_url
-}
+# modules/iam/main.tf
+# Core IAM: (1) EKS cluster role  (2) Fargate pod execution role
+# No OIDC or ALB IRSA here (those go to modules/iam_irsa after cluster exists)
 
-resource "aws_iam_openid_connect_provider" "eks_oidc_provider" {
-  url             = var.oidc_issuer_url
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.tls_certificate.eks_oidc.certificates[0].sha1_fingerprint]
-
-  tags = var.common_tags
-
-}
-
-data "aws_iam_policy_document" "irsa_trust" {
-  statement {
-    effect = "Allow"
-
-    principals {
-      type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.eks_oidc_provider.arn]
-    }
-
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-
-  }
-
-}
-
-resource "aws_iam_role" "irsa_role" {
-  name               = "${var.identifier}-irsa"
-  assume_role_policy = data.aws_iam_policy_document.irsa_trust.json
-}
-
-resource "aws_iam_role_policy_attachment" "irsa_s3_readonly" {
-  role       = aws_iam_role.irsa_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "irsa_eks_cni" {
-  role       = aws_iam_role.irsa_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-}
-
-
+# ----------------------------
+# EKS cluster role (control plane)
+# ----------------------------
 data "aws_iam_policy_document" "eks_cluster_iam_policy_document" {
   statement {
-    effect = "Allow"
-
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
     principals {
       type        = "Service"
       identifiers = ["eks.amazonaws.com"]
     }
-
-    actions = ["sts:AssumeRole"]
-
   }
-
 }
 
 resource "aws_iam_role" "eks_cluster_role" {
@@ -82,19 +41,18 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_AmazonEKSClusterPolicy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
-
+# ----------------------------
+# Fargate pod execution role
+# ----------------------------
 data "aws_iam_policy_document" "eks_pod_execution_role_iam_policy_document" {
   statement {
-    effect = "Allow"
-
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
     principals {
       type        = "Service"
       identifiers = ["eks-fargate-pods.amazonaws.com"]
     }
-
-    actions = ["sts:AssumeRole"]
   }
-
 }
 
 resource "aws_iam_role" "eks_pod_execution_role" {
@@ -103,14 +61,13 @@ resource "aws_iam_role" "eks_pod_execution_role" {
   tags               = var.common_tags
 }
 
-
 resource "aws_iam_role_policy_attachment" "eks_pod_AmazonEKSFargatePodExecutionRolePolicy" {
   role       = aws_iam_role.eks_pod_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
 }
 
+# Optional only if you run CloudWatch Agent
 resource "aws_iam_role_policy_attachment" "eks_pod_CloudWatchAgentServerPolicy" {
   role       = aws_iam_role.eks_pod_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-
 }

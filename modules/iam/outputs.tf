@@ -12,12 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-output "eks_cluster_role_arn" {
-  description = "The ARN of the EKS cluster IAM role."
+# modules/iam/outputs.tf
+
+# IRSA role ARN for the AWS Load Balancer Controller
+# modules/iam/outputs.tf
+
+output "cluster_role_arn" {
+  description = "IAM role ARN for the EKS control plane"
   value       = aws_iam_role.eks_cluster_role.arn
 }
 
-output "eks_pod_execution_role" {
-  description = "The ARN of the EKS node IAM role."
+output "pod_execution_role_arn" {
+  description = "Fargate pod execution role ARN"
   value       = aws_iam_role.eks_pod_execution_role.arn
 }

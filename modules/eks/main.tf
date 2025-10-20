@@ -13,7 +13,7 @@
 # limitations under the License.
 
 resource "aws_eks_cluster" "eks_cluster" {
-  name     = "${var.identifier}-${var.identifier}-eks-cluster"
+  name     = "${var.identifier}-eks-cluster"
   role_arn = var.cluster_role_arn
 
   vpc_config {
@@ -28,7 +28,30 @@ resource "aws_eks_fargate_profile" "fargate_profile" {
   fargate_profile_name   = "${var.identifier}-fargate-profile"
   pod_execution_role_arn = var.pod_execution_role_arn
   subnet_ids             = var.private_subnet_ids
+
+  # 1️⃣ Your application pods
   selector {
     namespace = "default"
+    labels = {
+      app = "hello-world"
+    }
   }
+
+  # 2️⃣ Core system pods (DNS)
+  selector {
+    namespace = "kube-system"
+    labels = {
+      k8s-app = "kube-dns"
+    }
+  }
+
+  # 3️⃣ AWS Load Balancer Controller (runs in kube-system)
+  selector {
+    namespace = "kube-system"
+    labels = {
+      "app.kubernetes.io/name" = "aws-load-balancer-controller"
+    }
+  }
+
+  tags = var.common_tags
 }

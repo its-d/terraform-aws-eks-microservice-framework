@@ -14,14 +14,19 @@
 
 terraform {
   required_version = ">= 1.5.0"
+
   required_providers {
-    tls = {
-      source  = "hashicorp/tls"
-      version = "~> 4.0"
-    }
     aws = {
       source  = "hashicorp/aws"
       version = "~> 6.0"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.13"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.29"
     }
   }
 
@@ -33,6 +38,7 @@ terraform {
 provider "aws" {
   region = var.region
 }
+
 
 locals {
   common_tags = {
@@ -47,22 +53,35 @@ module "app" {
 }
 
 module "eks" {
-  source                 = "./modules/eks/"
-  identifier             = var.identifier
-  common_tags            = local.common_tags
-  private_subnet_ids     = module.vpc.private_subnet_ids
-  cluster_role_arn       = module.iam.eks_cluster_role_arn
-  pod_execution_role_arn = module.iam.eks_pod_execution_role
+  source      = "./modules/eks/"
+  identifier  = var.identifier
+  common_tags = local.common_tags
+
+  # Networking
+  private_subnet_ids = module.vpc.private_subnet_ids
+
+  # 👇 Use the actual output names from modules/iam/outputs.tf
+  cluster_role_arn       = module.iam.cluster_role_arn
+  pod_execution_role_arn = module.iam.pod_execution_role_arn
 }
 
 module "iam" {
-  source          = "./modules/iam"
-  oidc_issuer_url = module.eks.oidc_issuer_url
+  source      = "./modules/iam"
+  common_tags = local.common_tags
+}
+
+module "iam_irsa" {
+  source          = "./modules/iam_irsa"
   identifier      = var.identifier
+  common_tags     = local.common_tags
+  oidc_issuer_url = module.eks.oidc_issuer_url
 }
 
 module "security" {
-  source = "./modules/security"
+  source      = "./modules/security"
+  vpc_id      = module.vpc.vpc_id
+  identifier  = var.identifier
+  common_tags = local.common_tags
 }
 
 module "vpc" {
