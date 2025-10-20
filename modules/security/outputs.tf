@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-rsync -av --progress \
-  --exclude='.git' \
-  --exclude='.venv' \
-  --exclude='LICENSE' \
-  ./terraform-template-framework/ ./terraform-aws-static-site-framework/
+output "sg_id" {
+  description = "Security Group ID to attach to the NLB"
+  value       = aws_security_group.nlb.id
+}

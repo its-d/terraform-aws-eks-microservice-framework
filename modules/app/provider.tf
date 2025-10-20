@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 # Copyright 2025 Darian Lee
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
-
-ENVIRONMENT=${1:-dev}
-
-echo "🚀 Applying Terraform changes for environment: ${ENVIRONMENT}"
-terraform apply "plan-${ENVIRONMENT}.tfplan"
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    tls  = { source = "hashicorp/tls", version = "~> 4.0" }
+    aws  = { source = "hashicorp/aws", version = "~> 6.0" }
+    helm = { source = "hashicorp/helm", version = "~> 2.12" }
+  }
+}

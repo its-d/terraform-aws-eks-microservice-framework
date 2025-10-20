@@ -26,19 +26,19 @@ repos:
       - id: check-added-large-files
       - id: check-merge-conflict
 
-  # --- Terraform (one source for all Terraform checks) ---
+  # --- Terraform ---
   - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.101.1
+    rev: v1.103.0
     hooks:
       - id: terraform_fmt
       - id: terraform_validate
       - id: terraform_tflint
-      # Optional: generates module docs; comment out if you don't want auto-edits
       - id: terraform_docs
-        args: ["--args=--sort-by required"]
+        args: ["--args=--sort-by", "required"]
 
   # --- Python (Formatting & Linting) ---
-  - repo: https://github.com/psf/black
+  # Use the mirror that provides pre-commit hooks
+  - repo: https://github.com/psf/black-pre-commit-mirror
     rev: 25.9.0
     hooks:
       - id: black
@@ -53,22 +53,29 @@ repos:
           - flake8-docstrings
         args: ["--max-line-length=100", "--ignore=E203,W503"]
 
-  # --- YAML & JSON Formatting ---
+  # --- YAML linting ---
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.37.1
     hooks:
       - id: yamllint
         args: ["-d", "{extends: default, rules: {line-length: disable}}"]
 
-  - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.34.0
-    hooks:
-      - id: check-jsonschema
-        files: \.json$
-
-  # --- License Enforcement ---
+  # --- Local hooks (kubeconform + license enforcement) ---
   - repo: local
     hooks:
+      # kubeconform installed on your system (brew install kubeconform)
+      - id: kubeconform
+        name: kubeconform (K8s)
+        entry: kubeconform
+        language: system
+        files: ^k8s/.*\.(ya?ml)$
+        args:
+          - -strict
+          - -summary
+          - -ignore-missing-schemas
+          - -kubernetes-version
+          - "1.30.0"
+
       - id: add-apache-headers
         name: Add/Update Apache-2.0 headers
         entry: addlicense -f .license-header.txt
@@ -83,7 +90,7 @@ repos:
           ^(LICENSE|NOTICE|VERSION)$|
           ^\.git/|
           ^docs/|
-          ^envs/.*/\.gitkeep$|
+          ^env/.*/\.gitkeep$|
           ^modules/.*/\.gitkeep$|
           ^\.venv/|
           __pycache__

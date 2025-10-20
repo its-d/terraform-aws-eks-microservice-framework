@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 # Copyright 2025 Darian Lee
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+variable "vpc_id" {
+  description = "VPC ID where the NLB will live"
+  type        = string
+}
 
-set -e
+variable "identifier" {
+  description = "Identifier/name prefix"
+  type        = string
+}
 
-ENVIRONMENT=${1:-dev}
+variable "common_tags" {
+  description = "Common tags"
+  type        = map(string)
+  default     = {}
+}
 
-echo "🧩 Generating plan for environment: ${ENVIRONMENT}"
-terraform plan -var-file="environments/${ENVIRONMENT}/terraform.tfvars" -out="plan-${ENVIRONMENT}.tfplan"
+variable "allowed_cidrs" {
+  description = "CIDR blocks allowed to reach the NLB (HTTP)"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}

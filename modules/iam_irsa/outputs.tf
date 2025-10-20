@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 # Copyright 2025 Darian Lee
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
+# modules/iam_irsa/outputs.tf
 
-ENVIRONMENT=${1:-dev}
-
-echo "🚀 Initializing Terraform for environment: ${ENVIRONMENT}"
-terraform init -backend-config="environments/${ENVIRONMENT}/backend.tfvars"
+output "alb_irsa_role_arn" {
+  description = "IRSA role ARN for the AWS Load Balancer Controller"
+  value       = aws_iam_role.alb_irsa.arn
+}

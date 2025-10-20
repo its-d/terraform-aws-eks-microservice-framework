@@ -15,7 +15,7 @@ override.tf.json
 terraform.tfplan
 .terraformrc
 terraform.rc
-
+*.tfplan
 # --- PYTHON (if using helper scripts) ---
 __pycache__/
 *.pyc

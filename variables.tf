@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 # Copyright 2025 Darian Lee
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
+variable "region" {
+  type        = string
+  default     = "us-east-1"
+  description = "AWS Region to be associated with the deployment."
+}
 
-ENVIRONMENT=${1:-dev}
+variable "environment" {
+  type        = string
+  description = "The environment for the resources (e.g., dev, staging, prod)."
+}
 
-echo "💣 Destroying Terraform resources for environment: ${ENVIRONMENT}"
-terraform destroy -var-file="environments/${ENVIRONMENT}/terraform.tfvars"
+variable "owner" {
+  type        = string
+  description = "The owner of the resources."
+}
+
+variable "identifier" {
+  type        = string
+  description = "A unique identifier for the resources."
+}
