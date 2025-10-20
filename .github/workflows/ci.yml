@@ -62,50 +62,112 @@ jobs:
       - name: Point pre-commit to terraform
         run: echo "PCT_TFPATH=$(which terraform)" >> $GITHUB_ENV
 
-      - name: Install CLI tools (prebuilt release binaries, no checksum)
+      - name: Install CLI tools (auto-detect release assets and install)
+        env:
+          # optional: workflow automatically uses GITHUB_TOKEN if present to avoid API rate limits
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          set -x
 
           BIN_DIR="$GITHUB_WORKSPACE/.bin"
           mkdir -p "$BIN_DIR"
 
-          # Pin versions to control reproducibility
-          TERRAFORM_DOCS_VERSION="v0.17.0"
-          KUBECONFORM_VERSION="v0.4.16"
-          ADDLICENSE_VERSION="v0.17.0"
+          # Versions to use (change these variables to update versions)
+          TERRAFORM_DOCS_REPO="terraform-docs/terraform-docs"
+          TERRAFORM_DOCS_TAG="v0.17.0"
 
-          # Download URLs for linux-amd64 assets (verify these match project releases)
-          TERRAFORM_DOCS_URL="https://github.com/terraform-docs/terraform-docs/releases/download/${TERRAFORM_DOCS_VERSION}/terraform-docs-${TERRAFORM_DOCS_VERSION#v}-linux-amd64.tar.gz"
-          KUBECONFORM_URL="https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform_${KUBECONFORM_VERSION#v}_linux_amd64.tar.gz"
-          ADDLICENSE_URL="https://github.com/google/addlicense/releases/download/${ADDLICENSE_VERSION}/addlicense_${ADDLICENSE_VERSION#v}_linux_amd64.tar.gz"
+          KUBECONFORM_REPO="yannh/kubeconform"
+          KUBECONFORM_TAG="v0.4.16"
 
-          download_and_install() {
-            local url="$1"
-            local name="$2"
+          ADDLICENSE_REPO="google/addlicense"
+          ADDLICENSE_TAG="v0.17.0"
 
-            tmpdir="$(mktemp -d)"
-            archive="$tmpdir/${name}.tar.gz"
-            echo "Downloading $name from $url"
-            curl -fsSL "$url" -o "$archive"
-
-            tar -xzf "$archive" -C "$tmpdir"
-            # find the first executable file inside the archive
-            binpath=$(find "$tmpdir" -type f -perm -111 -print -quit || true)
-            if [ -z "$binpath" ]; then
-              echo "ERROR: could not find binary inside archive for $name"
-              ls -la "$tmpdir"
-              exit 1
+          # helper: query GitHub Releases API and return a browser_download_url for a linux/amd64 asset
+          get_asset_url() {
+            repo="$1"
+            tag="$2"
+            if [ -n "${GITHUB_TOKEN:-}" ]; then
+              resp=$(curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/${repo}/releases/tags/${tag}")
+            else
+              resp=$(curl -fsSL "https://api.github.com/repos/${repo}/releases/tags/${tag}")
             fi
-            mv "$binpath" "${BIN_DIR}/${name}"
-            chmod +x "${BIN_DIR}/${name}"
-            rm -rf "$tmpdir"
-            echo "Installed ${name} to ${BIN_DIR}/${name}"
+            # try to find asset name matching linux and amd64/x86_64 (case-insensitive)
+            url=$(echo "$resp" | jq -r --arg re 'linux.*(amd64|x86_64)|amd64|x86_64' '.assets[] | select(.name | test($re; "i")) | .browser_download_url' | head -n1)
+            echo "$url"
           }
 
-          download_and_install "$TERRAFORM_DOCS_URL" "terraform-docs"
-          download_and_install "$KUBECONFORM_URL" "kubeconform"
-          download_and_install "$ADDLICENSE_URL" "addlicense"
+          download_extract_install() {
+            repo="$1"
+            tag="$2"
+            name="$3"
 
+            echo "Looking up release asset for ${repo} ${tag}..."
+            url="$(get_asset_url "$repo" "$tag")"
+            if [ -z "$url" ] || [ "$url" = "null" ]; then
+              echo "ERROR: no linux/amd64 asset found for ${repo} ${tag} via Releases API"
+              return 1
+            fi
+
+            echo "Downloading ${name} from: $url"
+            tmpdir="$(mktemp -d)"
+            archive="$tmpdir/asset.archive"
+            curl -fsSL -L -o "$archive" "$url"
+
+            # compute and print sha256 for convenience (you can later pin this in workflow)
+            echo "sha256:"
+            sha256sum "$archive" || true
+
+            # extract based on file magic
+            if file "$archive" | grep -qE 'gzip compressed data|tar archive'; then
+              tar -xzf "$archive" -C "$tmpdir"
+            elif file "$archive" | grep -qE 'XZ compressed data'; then
+              tar -xJf "$archive" -C "$tmpdir"
+            elif file "$archive" | grep -qE 'Zip archive data'; then
+              unzip -q "$archive" -d "$tmpdir"
+            else
+              # fallback attempts
+              if tar -xzf "$archive" -C "$tmpdir" 2>/dev/null; then
+                :
+              elif tar -xJf "$archive" -C "$tmpdir" 2>/dev/null; then
+                :
+              elif unzip -q "$archive" -d "$tmpdir" 2>/dev/null; then
+                :
+              else
+                echo "ERROR: unknown archive format for downloaded asset"
+                rm -rf "$tmpdir"
+                return 1
+              fi
+            fi
+
+            # find an executable binary inside the extracted tree; prefer exact name matches
+            binpath=$(find "$tmpdir" -type f \( -name "${name}" -o -name "${name}*" \) -perm /111 -print -quit || true)
+            if [ -z "$binpath" ]; then
+              binpath=$(find "$tmpdir" -type f -perm /111 -print -quit || true)
+            fi
+
+            if [ -z "$binpath" ]; then
+              echo "ERROR: could not find executable inside archive for ${name}"
+              ls -la "$tmpdir"
+              rm -rf "$tmpdir"
+              return 1
+            fi
+
+            mv "$binpath" "${BIN_DIR}/${name}"
+            chmod +x "${BIN_DIR}/${name}"
+            echo "Installed ${name} -> ${BIN_DIR}/${name}"
+            rm -rf "$tmpdir"
+          }
+
+          # install prerequisites for parsing and extraction
+          sudo apt-get update -y
+          sudo apt-get install -y jq unzip xz-utils
+
+          download_extract_install "$TERRAFORM_DOCS_REPO" "$TERRAFORM_DOCS_TAG" "terraform-docs"
+          download_extract_install "$KUBECONFORM_REPO" "$KUBECONFORM_TAG" "kubeconform"
+          download_extract_install "$ADDLICENSE_REPO" "$ADDLICENSE_TAG" "addlicense"
+
+          # add local bin to PATH for subsequent steps
           echo "$BIN_DIR" >> $GITHUB_PATH
         shell: bash
 
