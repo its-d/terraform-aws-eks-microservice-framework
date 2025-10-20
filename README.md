@@ -51,7 +51,7 @@ terraform-aws-eks-microservice-framework/
 │   ├── iam_irsa/                 # IRSA setup for ALB Controller
 │   ├── security/                 # Security group & firewall configuration
 │   └── app/                      # Placeholder module for app service configuration
-├── envs/
+├── env/
 │   ├── dev/                      # Environment-specific tfvars
 │   ├── test/
 │   └── prod/

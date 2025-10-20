@@ -3,7 +3,7 @@
 # ==============================
 
 ENV ?= dev
-TFVARS ?= envs/$(ENV)/terraform.tfvars
+TFVARS ?= env/$(ENV)/terraform.tfvars
 TF := terraform
 
 GREEN  := \033[0;32m

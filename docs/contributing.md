@@ -42,7 +42,7 @@ Thank you for your interest in contributing to **terraform-aws-eks-microservice-
 
 ## 🧪 Testing
 
-You can spin up isolated test environments using environment-specific `.tfvars` files under `/envs`.
+You can spin up isolated test environments using environment-specific `.tfvars` files under `/env`.
 
 Example:
 ```bash

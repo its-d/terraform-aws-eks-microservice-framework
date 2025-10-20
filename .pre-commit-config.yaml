@@ -90,7 +90,7 @@ repos:
           ^(LICENSE|NOTICE|VERSION)$|
           ^\.git/|
           ^docs/|
-          ^envs/.*/\.gitkeep$|
+          ^env/.*/\.gitkeep$|
           ^modules/.*/\.gitkeep$|
           ^\.venv/|
           __pycache__
