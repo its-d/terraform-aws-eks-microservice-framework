@@ -15,7 +15,7 @@
 ---
 name: CI
 
-"on":
+on:
   push:
     paths:
       - "**/*.tf"
@@ -23,6 +23,7 @@ name: CI
       - ".pre-commit-config.yaml"
       - "scripts/**"
       - ".github/workflows/ci.yml"
+      - ".github/workflows/ci.yaml"
   pull_request:
     paths:
       - "**/*.tf"
@@ -30,6 +31,7 @@ name: CI
       - ".pre-commit-config.yaml"
       - "scripts/**"
       - ".github/workflows/ci.yml"
+      - ".github/workflows/ci.yaml"
 
 permissions:
   contents: read
@@ -42,6 +44,7 @@ jobs:
   lint:
     name: Lint & Code Scan (pre-commit)
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -59,12 +62,16 @@ jobs:
         with:
           tflint_version: "v0.53.0"
 
-      - name: Point pre-commit to terraform
-        run: echo "PCT_TFPATH=$(which terraform)" >> $GITHUB_ENV
+      - name: Cache pre-commit
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
 
-      - name: Install CLI tools (auto-detect release assets and install)
+      - name: Install CLI tools (terraform-docs, kubeconform, addlicense)
         env:
-          # optional: workflow automatically uses GITHUB_TOKEN if present to avoid API rate limits
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
@@ -72,104 +79,127 @@ jobs:
 
           BIN_DIR="$GITHUB_WORKSPACE/.bin"
           mkdir -p "$BIN_DIR"
+          echo "$BIN_DIR" >> "$GITHUB_PATH"
 
-          # Versions to use (change these variables to update versions)
+          # --- Versions (pin here) ---
           TERRAFORM_DOCS_REPO="terraform-docs/terraform-docs"
-          TERRAFORM_DOCS_TAG="v0.17.0"
+          TERRAFORM_DOCS_TAG="v0.17.0"         # valid
+          TERRAFORM_DOCS_BIN="terraform-docs"
 
           KUBECONFORM_REPO="yannh/kubeconform"
-          KUBECONFORM_TAG="v0.4.16"
+          KUBECONFORM_TAG="v0.6.7"             # valid
+          KUBECONFORM_BIN="kubeconform"
 
           ADDLICENSE_REPO="google/addlicense"
-          ADDLICENSE_TAG="v0.17.0"
+          ADDLICENSE_TAG="v1.1.1"              # valid
+          ADDLICENSE_BIN="addlicense"
 
-          # helper: query GitHub Releases API and return a browser_download_url for a linux/amd64 asset
-          get_asset_url() {
-            repo="$1"
-            tag="$2"
+          # (Optional) SHA256 pins – populate these after a first successful run
+          # TERRAFORM_DOCS_SHA256="<fill-me>"
+          # KUBECONFORM_SHA256="<fill-me>"
+          # ADDLICENSE_SHA256="<fill-me>"
+
+          sudo apt-get update -y
+          sudo apt-get install -y jq unzip xz-utils
+
+          get_release_json() {
+            local repo="$1" tag="$2"
             if [ -n "${GITHUB_TOKEN:-}" ]; then
-              resp=$(curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/${repo}/releases/tags/${tag}")
+              curl -fsSL -H "Authorization: token $GITHUB_TOKEN" \
+                "https://api.github.com/repos/${repo}/releases/tags/${tag}" || return 1
             else
-              resp=$(curl -fsSL "https://api.github.com/repos/${repo}/releases/tags/${tag}")
+              curl -fsSL "https://api.github.com/repos/${repo}/releases/tags/${tag}" || return 1
             fi
-            # try to find asset name matching linux and amd64/x86_64 (case-insensitive)
-            url=$(echo "$resp" | jq -r --arg re 'linux.*(amd64|x86_64)|amd64|x86_64' '.assets[] | select(.name | test($re; "i")) | .browser_download_url' | head -n1)
-            echo "$url"
           }
 
-          download_extract_install() {
-            repo="$1"
-            tag="$2"
-            name="$3"
+          get_latest_release_json() {
+            local repo="$1"
+            if [ -n "${GITHUB_TOKEN:-}" ]; then
+              curl -fsSL -H "Authorization: token $GITHUB_TOKEN" \
+                "https://api.github.com/repos/${repo}/releases/latest"
+            else
+              curl -fsSL "https://api.github.com/repos/${repo}/releases/latest"
+            fi
+          }
 
-            echo "Looking up release asset for ${repo} ${tag}..."
-            url="$(get_asset_url "$repo" "$tag")"
+          pick_asset_url() {
+            # stdin: release JSON
+            # stdout: first linux/amd64 asset url
+            jq -r '
+              .assets[]
+              | select(
+                  (.name | test("linux"; "i"))
+                  and
+                  (.name | test("amd64|x86_64"; "i"))
+                )
+              | .browser_download_url
+            ' | head -n1
+          }
+
+          install_from_release() {
+            local repo="$1" tag="$2" bin_name="$3"
+            echo "Looking up ${repo} ${tag}…"
+            release_json="$(get_release_json "$repo" "$tag" || true)"
+
+            if [ -z "${release_json}" ] || [ "${release_json}" = "null" ]; then
+              echo "Tag ${tag} not found for ${repo}; falling back to latest"
+              release_json="$(get_latest_release_json "$repo")"
+            fi
+
+            url="$(echo "$release_json" | pick_asset_url)"
             if [ -z "$url" ] || [ "$url" = "null" ]; then
-              echo "ERROR: no linux/amd64 asset found for ${repo} ${tag} via Releases API"
+              echo "ERROR: no linux/amd64 asset found for ${repo}"
+              echo "$release_json" | jq -r '.assets[].name' || true
               return 1
             fi
 
-            echo "Downloading ${name} from: $url"
+            echo "Downloading ${bin_name} from: $url"
             tmpdir="$(mktemp -d)"
             archive="$tmpdir/asset.archive"
             curl -fsSL -L -o "$archive" "$url"
 
-            # compute and print sha256 for convenience (you can later pin this in workflow)
-            echo "sha256:"
+            echo "sha256 (unverified):"
             sha256sum "$archive" || true
 
-            # extract based on file magic
-            if file "$archive" | grep -qE 'gzip compressed data|tar archive'; then
-              tar -xzf "$archive" -C "$tmpdir"
-            elif file "$archive" | grep -qE 'XZ compressed data'; then
-              tar -xJf "$archive" -C "$tmpdir"
-            elif file "$archive" | grep -qE 'Zip archive data'; then
+            # Verify checksum if you’ve pinned it above
+            # case "$bin_name" in
+            #   terraform-docs) echo "${TERRAFORM_DOCS_SHA256}  $archive" | sha256sum -c - ;;
+            #   kubeconform)    echo "${KUBECONFORM_SHA256}  $archive"   | sha256sum -c - ;;
+            #   addlicense)     echo "${ADDLICENSE_SHA256}  $archive"    | sha256sum -c - ;;
+            # esac
+
+            # Try extraction; handle different archive formats
+            if file "$archive" | grep -qi 'Zip archive data'; then
               unzip -q "$archive" -d "$tmpdir"
             else
-              # fallback attempts
-              if tar -xzf "$archive" -C "$tmpdir" 2>/dev/null; then
-                :
-              elif tar -xJf "$archive" -C "$tmpdir" 2>/dev/null; then
-                :
-              elif unzip -q "$archive" -d "$tmpdir" 2>/dev/null; then
-                :
-              else
-                echo "ERROR: unknown archive format for downloaded asset"
-                rm -rf "$tmpdir"
+              # try both common tar variants
+              tar -xf "$archive" -C "$tmpdir" || {
+                echo "ERROR: could not extract $archive"
                 return 1
-              fi
+              }
             fi
 
-            # find an executable binary inside the extracted tree; prefer exact name matches
-            binpath=$(find "$tmpdir" -type f \( -name "${name}" -o -name "${name}*" \) -perm /111 -print -quit || true)
+            # Find the binary
+            binpath="$(find "$tmpdir" -type f -perm /111 -name "$bin_name" -print -quit)"
             if [ -z "$binpath" ]; then
-              binpath=$(find "$tmpdir" -type f -perm /111 -print -quit || true)
+              # sometimes the binary is named with suffixes; pick first executable
+              binpath="$(find "$tmpdir" -type f -perm /111 -print -quit)"
             fi
-
             if [ -z "$binpath" ]; then
-              echo "ERROR: could not find executable inside archive for ${name}"
+              echo "ERROR: executable not found for ${bin_name}"
               ls -la "$tmpdir"
-              rm -rf "$tmpdir"
               return 1
             fi
 
-            mv "$binpath" "${BIN_DIR}/${name}"
-            chmod +x "${BIN_DIR}/${name}"
-            echo "Installed ${name} -> ${BIN_DIR}/${name}"
+            mv "$binpath" "${BIN_DIR}/${bin_name}"
+            chmod +x "${BIN_DIR}/${bin_name}"
+            echo "Installed ${bin_name} -> ${BIN_DIR}/${bin_name}"
             rm -rf "$tmpdir"
           }
 
-          # install prerequisites for parsing and extraction
-          sudo apt-get update -y
-          sudo apt-get install -y jq unzip xz-utils
-
-          download_extract_install "$TERRAFORM_DOCS_REPO" "$TERRAFORM_DOCS_TAG" "terraform-docs"
-          download_extract_install "$KUBECONFORM_REPO" "$KUBECONFORM_TAG" "kubeconform"
-          download_extract_install "$ADDLICENSE_REPO" "$ADDLICENSE_TAG" "addlicense"
-
-          # add local bin to PATH for subsequent steps
-          echo "$BIN_DIR" >> $GITHUB_PATH
-        shell: bash
+          install_from_release "$TERRAFORM_DOCS_REPO" "$TERRAFORM_DOCS_TAG" "$TERRAFORM_DOCS_BIN"
+          install_from_release "$KUBECONFORM_REPO"    "$KUBECONFORM_TAG"    "$KUBECONFORM_BIN"
+          install_from_release "$ADDLICENSE_REPO"     "$ADDLICENSE_TAG"     "$ADDLICENSE_BIN"
 
       - name: Install pre-commit
         run: |
@@ -189,7 +219,6 @@ jobs:
       fail-fast: false
       matrix:
         env_dir: [dev]
-        # Add depending on your env directories
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
@@ -212,7 +241,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env_dir: [dev]  # test, prod
+        env_dir: [dev]
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
