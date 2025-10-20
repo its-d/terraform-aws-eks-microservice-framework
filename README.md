@@ -1,214 +1,168 @@
-# Terraform AWS EKS Microservice Framework
+# 🚀 terraform-aws-eks-microservice-framework
 
-**Author:** Darian Lee
-**License:** Apache-2.0
-
----
-
-## Overview
-
-The **Terraform AWS EKS Microservice Framework** is a reusable, opinionated baseline for spinning up an **EKS cluster** and its core AWS scaffolding using Terraform. It’s intended as a “plug-and-play” starting point that you (or others) can clone, set environment values, and deploy.
-
-- Fast bootstrap of an EKS-ready AWS environment
-- Consistent Infrastructure-as-Code patterns
-- Pre-commit quality gates for Terraform, YAML/JSON, and Python helper scripts
-- Makefile for smooth developer ergonomics
+A modular, production-ready Terraform framework for deploying **AWS EKS (Elastic Kubernetes Service)** and running **microservices on AWS Fargate**.
+This project provisions a fully functional EKS cluster, configures networking, IAM roles, and security, and deploys a sample “hello-world” application through Kubernetes manifests to verify the setup.
 
 ---
 
-## Prerequisites
+## 🧠 Overview
 
-### System tools (install via Homebrew)
+This repository is designed to help you:
+- Stand up a complete **EKS on Fargate** environment using Terraform.
+- Automate IAM, networking, and Kubernetes add-on configuration.
+- Enforce consistent quality through pre-commit checks and CI/CD.
+- Provide a reusable structure for deploying future microservices.
 
-Create a `Brewfile` with the following and run `brew bundle install`:
-
-```bash
-brew "terraform"
-brew "tflint"
-brew "terraform-docs"
-brew "addlicense"
-brew "python@3.11"
-brew "pre-commit"
-brew "make"
-brew "git"
-```
-
-Then:
-
-```bash
-brew bundle install
-```
-
-### Python (for pre-commit)
-
-Create a virtual environment and install:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install pre-commit==4.3.0 PyYAML==6.0.3
-```
-
-*(If you keep a `requirements.txt`, include at least: `pre-commit==4.3.0` and `PyYAML==6.0.3`.)*
+It’s modular, opinionated, and built for teams that want repeatable, auditable, and secure infrastructure.
 
 ---
 
-## Quick Start
+## 🏗️ Architecture
 
-```bash
-git clone https://github.com/<your-username>/terraform-aws-eks-microservice-framework.git
-cd terraform-aws-eks-microservice-framework
+**Core Flow**
+1. **VPC Module** — builds the private and public subnets, route tables, and NAT gateways.
+2. **EKS Module** — deploys the EKS control plane with Fargate-only compute profiles.
+3. **IAM / IRSA Modules** — creates service-linked IAM roles and maps Kubernetes service accounts using IRSA (for least-privilege access).
+4. **Security Module** — defines load balancer and pod-level ingress/egress rules.
+5. **App Module** — defines app-specific Kubernetes resources and ECR integration.
+6. **ALB Controller (Helm)** — deploys the AWS Load Balancer Controller inside the cluster.
+7. **Kubernetes Manifests** (`k8s/`) — deploy the example `hello-world` service and deployment.
 
-# One-time: install pre-commit hooks
-pre-commit install
-
-# Pick an environment (dev/test/prod). ENV is required by Makefile targets.
-export ENV=dev
-
-# Initialize, plan, and apply
-make init
-make plan
-make apply
-```
-
-To tear down:
-
-```bash
-export ENV=dev
-make destroy
-```
+The result:
+A fully functional, Fargate-backed EKS environment accessible via an internet-facing Network Load Balancer (NLB).
 
 ---
 
-## Repository Structure
+## 🧩 Repository Structure
 
 ```
 terraform-aws-eks-microservice-framework/
-├── .github/
-│   └── workflows/
-│       └── ci.yml
-│
-├── .terraform/                  # Local Terraform metadata (auto-created)
-├── .venv/                       # Python virtual environment
-│
-├── docs/                        # Documentation folder (architecture, usage)
-│
-├── envs/                        # Environment-specific deployments
-│   ├── dev/
-│   │   └── terraform.tfvars
+├── main.tf                      # Root orchestration of all modules
+├── variables.tf                 # Global input variables
+├── output.tf                    # Exported outputs (VPC IDs, cluster name, etc.)
+├── backend.tf                   # Remote state backend (S3 + DynamoDB)
+├── alb_controller.tf             # AWS Load Balancer Controller Helm setup
+├── Makefile                      # Common commands for Terraform workflows
+├── .pre-commit-config.yaml       # Linting, YAML, Terraform & CI validation
+├── modules/
+│   ├── vpc/                      # Creates subnets, route tables, and VPC
+│   ├── eks/                      # Provisions the EKS control plane & Fargate profiles
+│   ├── iam/                      # IAM roles for cluster & admin access
+│   ├── iam_irsa/                 # IRSA setup for ALB Controller
+│   ├── security/                 # Security group & firewall configuration
+│   └── app/                      # Placeholder module for app service configuration
+├── envs/
+│   ├── dev/                      # Environment-specific tfvars
 │   ├── test/
 │   └── prod/
-│
-├── k8s/                         # Kubernetes manifests or configs
+├── k8s/
+│   ├── deployment-hello-world.yaml  # Sample Kubernetes Deployment
+│   ├── service-hello-world.yaml     # Sample Service (NLB front-end)
+├── docs/
 │   └── .gitkeep
-│
-├── modules/                     # Reusable Terraform modules
-│   ├── app/
-│   │   ├── main.tf
-│   │   ├── outputs.tf
-│   │   ├── provider.tf
-│   │   └── variables.tf
-│   ├── eks/
-│   │   ├── main.tf
-│   │   ├── outputs.tf
-│   │   ├── provider.tf
-│   │   └── variables.tf
-│   ├── iam/
-│   │   ├── main.tf
-│   │   ├── outputs.tf
-│   │   ├── provider.tf
-│   │   └── variables.tf
-│   ├── security/
-│   │   ├── main.tf
-│   │   ├── outputs.tf
-│   │   ├── provider.tf
-│   │   └── variables.tf
-│   └── vpc/
-│       ├── main.tf
-│       ├── outputs.tf
-│       ├── provider.tf
-│       └── variables.tf
-│
-├── scripts/                     # Automation scripts
-│   ├── init.sh
-│   ├── plan.sh
-│   ├── apply.sh
-│   └── destroy.sh
-│
-├── .gitignore
-├── .license-header.txt
-├── .pre-commit-config.yaml
-├── backend.tf
-├── CHANGELOG.md
-├── LICENSE
-├── main.tf
-├── Makefile
-├── NOTICE
-├── README.md
-├── requirements.txt
-├── variables.tf
-└── VERSION
+├── .github/workflows/ci.yml      # Pre-commit and Terraform CI pipeline
+├── LICENSE                       # Apache 2.0 License
+└── NOTICE
 ```
 
-**Environments** live under `envs/<name>` and hold:
-- `main.tf` — root calls to modules (vpc/eks/iam/security)
-- `variables.tf` — inputs for that environment
-- `terraform.tfvars` — environment-specific variable values
+---
+
+## ⚙️ Prerequisites
+
+- Terraform >= 1.6
+- AWS CLI configured with admin permissions
+- kubectl & eksctl installed
+- Helm >= 3.8
+- Python >= 3.10 (for pre-commit hooks)
+- pre-commit (`pip install pre-commit`)
 
 ---
 
-## Makefile Commands
+## 🚀 Deployment Steps
 
-| Command | Description |
-|----------|-------------|
-| `make init` | Initialize Terraform for the current environment |
-| `make plan` | Generate an execution plan |
-| `make apply` | Apply the Terraform plan |
-| `make destroy` | Destroy Terraform-managed resources |
-| `make validate` | Validate configuration files |
-| `make fmt` | Format Terraform code recursively |
-| `make lint` | Run all pre-commit hooks |
-| `make docs` | Generate Terraform module documentation |
-| `make clean` | Clean up local state files |
-| `make help` | Display all available commands |
+### 1. Clone the Repository
 
-> 💡 If no environment variable is set (`ENV`), `make` will prompt you interactively.
+```bash
+git clone https://github.com/your-org/terraform-aws-eks-microservice-framework.git
+cd terraform-aws-eks-microservice-framework
+```
+
+### 2. Initialize Terraform
+
+```bash
+make init ENV=dev
+```
+
+### 3. Plan the Infrastructure
+
+```bash
+make plan ENV=dev
+```
+
+### 4. Apply the Changes
+
+```bash
+make apply ENV=dev
+```
+
+### 5. Configure kubectl Access
+
+```bash
+aws eks update-kubeconfig --name sample-eks-cluster --region us-east-1
+```
+
+### 6. Deploy the Application
+
+```bash
+kubectl apply -f k8s/deployment-hello-world.yaml
+kubectl apply -f k8s/service-hello-world.yaml
+```
+
+After a few minutes, check for the external NLB endpoint:
+
+```bash
+kubectl get svc hello-world
+```
+
+Then open the URL in a browser — you should see **“Hello World”**.
 
 ---
 
-## Quality Gates (Pre-Commit)
+## ✅ Quality & Validation
 
-This framework uses pre-commit hooks to enforce code quality before every commit.
-
-### Checks Included
-- ✅ Terraform format, validate, lint, and docs
-- ✅ Python code style (Black, Flake8)
-- ✅ YAML and JSON linting
-- ✅ Apache 2.0 license headers
-- ✅ Merge conflict and whitespace checks
-
-Run manually:
+This repo uses **pre-commit hooks** to enforce code quality before commits.
+Run the checks manually using:
 
 ```bash
 pre-commit run --all-files
 ```
 
+Checks include:
+- Terraform format & validation
+- YAML linting
+- Kubernetes manifest validation (via kubeconform)
+- License header enforcement
+
 ---
 
-## License
+## 📚 Documentation
 
-```
-Copyright 2025 Darian Lee
+Additional guides are available in the [`docs/`](docs/) directory:
+- [`docs/architecture.md`](docs/architecture.md) – Visual overview of module interactions.
+- [`docs/contributing.md`](docs/contributing.md) – How to extend modules and submit PRs.
+- [`docs/troubleshooting.md`](docs/troubleshooting.md) – Common fixes for IAM, NLB, or Fargate issues.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+---
 
-    http://www.apache.org/licenses/LICENSE-2.0
+## 🪪 License
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-```
+Licensed under the **Apache License, Version 2.0**.
+See the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🧑‍💻 Author
+
+**Darian Lee**
+Infrastructure Engineer & Cloud Consultant
+[LinkedIn](https://www.linkedin.com/in/darian-873)
