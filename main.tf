@@ -35,6 +35,33 @@ terraform {
   }
 }
 
+# Ask AWS for live EKS connection details (no kubeconfig needed)
+data "aws_eks_cluster" "this" {
+  name       = module.eks.cluster_name
+  depends_on = [module.eks]
+}
+
+data "aws_eks_cluster_auth" "this" {
+  name       = module.eks.cluster_name
+  depends_on = [module.eks]
+}
+
+# Kubernetes provider uses the EKS endpoint/CA/token directly
+provider "kubernetes" {
+  host                   = data.aws_eks_cluster.this.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.this.token
+}
+
+# Helm provider reuses the same EKS connection
+provider "helm" {
+  kubernetes {
+    host                   = data.aws_eks_cluster.this.endpoint
+    cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
+    token                  = data.aws_eks_cluster_auth.this.token
+  }
+}
+
 provider "aws" {
   region = var.region
 }
@@ -57,12 +84,14 @@ module "eks" {
   identifier  = var.identifier
   common_tags = local.common_tags
 
-  # Networking
-  private_subnet_ids = module.vpc.private_subnet_ids
-
-  # 👇 Use the actual output names from modules/iam/outputs.tf
+  private_subnet_ids     = module.vpc.private_subnet_ids
   cluster_role_arn       = module.iam.cluster_role_arn
   pod_execution_role_arn = module.iam.pod_execution_role_arn
+
+  # Endpoint access controls
+  endpoint_private_access = var.endpoint_private_access
+  endpoint_public_access  = var.endpoint_public_access
+  public_access_cidrs     = var.public_access_cidrs
 }
 
 module "iam" {
@@ -72,16 +101,33 @@ module "iam" {
 
 module "iam_irsa" {
   source          = "./modules/iam_irsa"
-  identifier      = var.identifier
   common_tags     = local.common_tags
   oidc_issuer_url = module.eks.oidc_issuer_url
 }
 
 module "security" {
-  source      = "./modules/security"
-  vpc_id      = module.vpc.vpc_id
-  identifier  = var.identifier
-  common_tags = local.common_tags
+  source                    = "./modules/security"
+  vpc_id                    = module.vpc.vpc_id
+  cluster_security_group_id = module.eks.cluster_security_group_id
+  common_tags               = local.common_tags
+}
+
+module "storage" {
+  source                = "./modules/storage"
+  identifier            = var.identifier
+  private_subnet_ids    = module.vpc.private_subnet_ids
+  efs_security_group_id = module.security.efs_sg_id
+  common_tags           = local.common_tags
+}
+
+module "grafana" {
+  source                 = "./modules/grafana"
+  identifier             = var.identifier
+  efs_file_system_id     = module.storage.efs_file_system_id
+  efs_access_point_id    = module.storage.efs_access_point_id
+  grafana_admin_password = var.grafana_admin_password
+  grafana_admin_user     = var.grafana_admin_user
+
 }
 
 module "vpc" {

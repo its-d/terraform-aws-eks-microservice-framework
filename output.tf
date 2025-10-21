@@ -39,9 +39,9 @@ output "pod_execution_role_arn" {
   value       = module.iam.pod_execution_role_arn
 }
 
-output "nlb_sg_id" {
+output "alb_sg_id" {
   description = "Security Group ID to attach to the NLB"
-  value       = module.security.nlb_sg_id
+  value       = module.security.alb_sg_id
 }
 
 # Optional but handy
@@ -53,4 +53,24 @@ output "vpc_id" {
 output "private_subnet_ids" {
   description = "Private subnet IDs used by EKS/Fargate"
   value       = module.vpc.private_subnet_ids
+}
+
+output "cluster_security_group_id" {
+  description = "EKS cluster security group ID (used by Fargate pods)"
+  value       = module.eks.cluster_security_group_id
+}
+
+output "efs_file_system_id" {
+  description = "EFS file system ID"
+  value       = module.storage
+}
+
+output "efs_access_point_id" {
+  description = "EFS access point ID for Grafana"
+  value       = module.storage.efs_access_point_id
+}
+
+output "efs_sg_id" {
+  description = "Security group ID used by EFS mount targets"
+  value       = module.security.efs_sg_id
 }

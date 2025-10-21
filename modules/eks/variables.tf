@@ -37,3 +37,21 @@ variable "pod_execution_role_arn" {
   description = "The ARN of the IAM role for EKS pod execution."
 
 }
+
+variable "endpoint_private_access" {
+  type        = bool
+  description = "Whether the EKS API server is reachable from within the VPC"
+  default     = true
+}
+
+variable "endpoint_public_access" {
+  type        = bool
+  description = "Whether the EKS API server is reachable from the internet"
+  default     = true
+}
+
+variable "public_access_cidrs" {
+  type        = list(string)
+  description = "Allowed CIDRs for public EKS API access (only used if public access is enabled)"
+  default     = ["0.0.0.0/0"]
+}

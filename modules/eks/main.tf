@@ -15,9 +15,13 @@
 resource "aws_eks_cluster" "eks_cluster" {
   name     = "${var.identifier}-eks-cluster"
   role_arn = var.cluster_role_arn
+  version  = "1.34"
 
   vpc_config {
-    subnet_ids = var.private_subnet_ids
+    subnet_ids              = var.private_subnet_ids
+    endpoint_private_access = var.endpoint_private_access
+    endpoint_public_access  = var.endpoint_public_access
+    public_access_cidrs     = var.public_access_cidrs
   }
 
   tags = var.common_tags
@@ -29,15 +33,19 @@ resource "aws_eks_fargate_profile" "fargate_profile" {
   pod_execution_role_arn = var.pod_execution_role_arn
   subnet_ids             = var.private_subnet_ids
 
-  # 1️⃣ Your application pods
   selector {
     namespace = "default"
-    labels = {
-      app = "hello-world"
-    }
   }
 
-  # 2️⃣ Core system pods (DNS)
+  selector {
+    namespace = "monitoring"
+  }
+
+  selector {
+    namespace = "kube-system"
+  }
+
+  # CoreDNS pods
   selector {
     namespace = "kube-system"
     labels = {
@@ -45,7 +53,7 @@ resource "aws_eks_fargate_profile" "fargate_profile" {
     }
   }
 
-  # 3️⃣ AWS Load Balancer Controller (runs in kube-system)
+  # AWS Load Balancer Controller pods
   selector {
     namespace = "kube-system"
     labels = {

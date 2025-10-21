@@ -11,25 +11,33 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-variable "vpc_id" {
-  description = "VPC ID where the NLB will live"
+
+variable "grafana_admin_user" {
+  description = "Grafana admin username"
   type        = string
 }
 
-
-variable "common_tags" {
-  description = "Common tags"
-  type        = map(string)
-  default     = {}
-}
-
-variable "allowed_cidrs" {
-  description = "CIDR blocks allowed to reach the NLB (HTTP)"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
-}
-
-variable "cluster_security_group_id" {
-  description = "EKS Cluster Security Group ID to allow access from the NLB"
+variable "grafana_admin_password" {
+  description = "Grafana admin password"
   type        = string
+  sensitive   = true
+
+}
+
+variable "identifier" {
+  type        = string
+  description = "A unique identifier for the resources."
+
+}
+
+variable "efs_file_system_id" {
+  type        = string
+  description = "The ID of the EFS file system to be used by Grafana for storage."
+
+}
+
+variable "efs_access_point_id" {
+  type        = string
+  description = "The ID of the EFS access point to be used by Grafana for storage."
+
 }

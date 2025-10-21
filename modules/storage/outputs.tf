@@ -11,25 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-variable "vpc_id" {
-  description = "VPC ID where the NLB will live"
-  type        = string
+
+output "efs_file_system_id" {
+  description = "EFS file system ID"
+  value       = aws_efs_file_system.efs.id
 }
 
-
-variable "common_tags" {
-  description = "Common tags"
-  type        = map(string)
-  default     = {}
+output "efs_access_point_id" {
+  description = "EFS access point ID for Grafana"
+  value       = aws_efs_access_point.efs_access_point.id
 }
 
-variable "allowed_cidrs" {
-  description = "CIDR blocks allowed to reach the NLB (HTTP)"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
-}
-
-variable "cluster_security_group_id" {
-  description = "EKS Cluster Security Group ID to allow access from the NLB"
-  type        = string
+output "grafana_efs_ap_id" {
+  description = "Alias of the EFS access point ID for Grafana"
+  value       = aws_efs_access_point.efs_access_point.id
 }
