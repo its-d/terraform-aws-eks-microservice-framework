@@ -35,6 +35,33 @@ terraform {
   }
 }
 
+# Ask AWS for live EKS connection details (no kubeconfig needed)
+data "aws_eks_cluster" "this" {
+  name       = module.eks.cluster_name
+  depends_on = [module.eks]
+}
+
+data "aws_eks_cluster_auth" "this" {
+  name       = module.eks.cluster_name
+  depends_on = [module.eks]
+}
+
+# Kubernetes provider uses the EKS endpoint/CA/token directly
+provider "kubernetes" {
+  host                   = data.aws_eks_cluster.this.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.this.token
+}
+
+# Helm provider reuses the same EKS connection
+provider "helm" {
+  kubernetes {
+    host                   = data.aws_eks_cluster.this.endpoint
+    cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
+    token                  = data.aws_eks_cluster_auth.this.token
+  }
+}
+
 provider "aws" {
   region = var.region
 }
@@ -72,16 +99,15 @@ module "iam" {
 
 module "iam_irsa" {
   source          = "./modules/iam_irsa"
-  identifier      = var.identifier
   common_tags     = local.common_tags
   oidc_issuer_url = module.eks.oidc_issuer_url
 }
 
 module "security" {
-  source      = "./modules/security"
-  vpc_id      = module.vpc.vpc_id
-  identifier  = var.identifier
-  common_tags = local.common_tags
+  source                    = "./modules/security"
+  vpc_id                    = module.vpc.vpc_id
+  cluster_security_group_id = module.eks.cluster_security_group_id
+  common_tags               = local.common_tags
 }
 
 module "vpc" {

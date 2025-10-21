@@ -17,14 +17,15 @@ _guard_tfvars:
 		exit 1; \
 	fi
 
-init:  ## terraform init at repo root
+init:  ## Initialize Terraform in root and all module folders (skip hidden dirs)
 	@echo "$(YELLOW)🚀 Initializing Terraform (root)$(RESET)"
-	$(TF) init -upgrade
-	cd modules/iam && $(TF) init -upgrade
-	cd modules/iam_irsa && $(TF) init -upgrade
-	cd modules/vpc %% $(TF) init -upgrade
-	cd modules/eks && $(TF) init -upgrade
-	cd modules/security && $(TF) init -upgrade
+	@$(TF) init -upgrade
+	@echo "$(YELLOW)🔁 Initializing all modules...$(RESET)"
+	@for dir in $$(find modules -mindepth 1 -maxdepth 1 -type d ! -name ".*"); do \
+		echo "$(YELLOW)→ Initializing $$dir$(RESET)"; \
+		cd $$dir && $(TF) init -upgrade >/dev/null && cd - >/dev/null; \
+	done
+	@echo "$(YELLOW)✅ All Terraform modules initialized$(RESET)"
 
 plan: _guard_tfvars ## terraform plan using env tfvars
 	@echo "$(YELLOW)🧠 Planning for $(ENV)$(RESET)"

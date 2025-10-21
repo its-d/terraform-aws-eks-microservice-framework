@@ -39,9 +39,9 @@ output "pod_execution_role_arn" {
   value       = module.iam.pod_execution_role_arn
 }
 
-output "nlb_sg_id" {
+output "alb_sg_id" {
   description = "Security Group ID to attach to the NLB"
-  value       = module.security.nlb_sg_id
+  value       = module.security.alb_sg_id
 }
 
 # Optional but handy

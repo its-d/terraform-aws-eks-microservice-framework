@@ -15,22 +15,6 @@
 # modules/iam_irsa/main.tf
 # Post-cluster IAM: OIDC provider + AWS Load Balancer Controller IRSA
 
-variable "common_tags" {
-  type        = map(string)
-  description = "Common tags"
-  default     = {}
-}
-
-variable "identifier" {
-  type        = string
-  description = "Name prefix / identifier"
-}
-
-variable "oidc_issuer_url" {
-  type        = string
-  description = "EKS cluster OIDC issuer URL (from module.eks.oidc_issuer_url)"
-}
-
 locals {
   oidc_issuer_host = replace(var.oidc_issuer_url, "https://", "")
   alb_namespace    = "kube-system"
@@ -72,7 +56,7 @@ data "aws_iam_policy_document" "irsa_trust" {
 }
 
 resource "aws_iam_role" "alb_irsa" {
-  name               = "${var.identifier}-alb-controller-irsa"
+  name               = "alb-controller-irsa"
   assume_role_policy = data.aws_iam_policy_document.irsa_trust.json
   tags               = var.common_tags
 }

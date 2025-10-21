@@ -13,34 +13,6 @@
 # limitations under the License.
 
 ############################################
-# EKS connection (cluster info + auth)
-############################################
-data "aws_eks_cluster" "this" {
-  name = module.eks.cluster_name
-}
-
-data "aws_eks_cluster_auth" "this" {
-  name = module.eks.cluster_name
-}
-
-############################################
-# Kubernetes & Helm providers using the EKS endpoint/CA/token
-############################################
-provider "kubernetes" {
-  host                   = data.aws_eks_cluster.this.endpoint
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
-  token                  = data.aws_eks_cluster_auth.this.token
-}
-
-provider "helm" {
-  kubernetes {
-    host                   = data.aws_eks_cluster.this.endpoint
-    cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
-    token                  = data.aws_eks_cluster_auth.this.token
-  }
-}
-
-############################################
 # ServiceAccount for ALB Controller (IRSA)
 # - Annotated with the IRSA role ARN you already created in module.iam_irsa
 ############################################

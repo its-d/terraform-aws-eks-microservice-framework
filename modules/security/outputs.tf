@@ -11,7 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-output "sg_id" {
+output "alb_sg_id" {
   description = "Security Group ID to attach to the NLB"
-  value       = aws_security_group.nlb.id
+  value       = aws_security_group.alb_sg.id
+}
+
+output "efs_sg_id" {
+  description = "Security Group ID to attach to EFS access from EKS Fargate pods"
+  value       = aws_security_group.efs_sg.id
 }

@@ -11,25 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-variable "vpc_id" {
-  description = "VPC ID where the NLB will live"
-  type        = string
-}
-
 
 variable "common_tags" {
-  description = "Common tags"
   type        = map(string)
+  description = "Common tags"
   default     = {}
 }
 
-variable "allowed_cidrs" {
-  description = "CIDR blocks allowed to reach the NLB (HTTP)"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
-}
-
-variable "cluster_security_group_id" {
-  description = "EKS Cluster Security Group ID to allow access from the NLB"
+variable "oidc_issuer_url" {
   type        = string
+  description = "EKS cluster OIDC issuer URL (from module.eks.oidc_issuer_url)"
 }
