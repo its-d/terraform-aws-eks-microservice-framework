@@ -12,17 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-output "efs_file_system_id" {
-  description = "EFS file system ID"
-  value       = aws_efs_file_system.efs.id
-}
+# modules/iam/outputs.tf
 
-output "efs_access_point_id" {
-  description = "EFS access point ID for Grafana"
-  value       = aws_efs_access_point.efs_access_point.id
-}
-
-output "grafana_efs_ap_id" {
-  description = "Alias of the EFS access point ID for Grafana"
-  value       = aws_efs_access_point.efs_access_point.id
-}
+# IRSA role ARN for the AWS Load Balancer Controller
+# modules/iam/outputs.tf

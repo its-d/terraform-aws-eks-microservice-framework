@@ -50,3 +50,14 @@ variable "public_access_cidrs" {
   default     = ["0.0.0.0/0"] # tighten in env tfvars
   description = "CIDRs allowed to reach the public EKS API"
 }
+
+variable "grafana_admin_password" {
+  type        = string
+  description = "Grafana admin password"
+  sensitive   = true
+}
+
+variable "grafana_admin_user" {
+  type        = string
+  description = "Grafana admin username"
+}

@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-output "efs_file_system_id" {
-  description = "EFS file system ID"
-  value       = aws_efs_file_system.efs.id
-}
-
-output "efs_access_point_id" {
-  description = "EFS access point ID for Grafana"
-  value       = aws_efs_access_point.efs_access_point.id
-}
-
-output "grafana_efs_ap_id" {
-  description = "Alias of the EFS access point ID for Grafana"
-  value       = aws_efs_access_point.efs_access_point.id
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.13"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.29"
+    }
+  }
 }

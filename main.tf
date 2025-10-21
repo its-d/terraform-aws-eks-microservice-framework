@@ -120,6 +120,16 @@ module "storage" {
   common_tags           = local.common_tags
 }
 
+module "grafana" {
+  source                 = "./modules/grafana"
+  identifier             = var.identifier
+  efs_file_system_id     = module.storage.efs_file_system_id
+  efs_access_point_id    = module.storage.efs_access_point_id
+  grafana_admin_password = var.grafana_admin_password
+  grafana_admin_user     = var.grafana_admin_user
+
+}
+
 module "vpc" {
   source      = "./modules/vpc"
   environment = var.environment

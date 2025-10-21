@@ -13,23 +13,6 @@
 # limitations under the License.
 
 ############################################
-# ServiceAccount for ALB Controller (IRSA)
-# - Annotated with the IRSA role ARN you already created in module.iam_irsa
-############################################
-# resource "kubernetes_service_account" "alb_sa" {
-#   metadata {
-#     name      = "aws-load-balancer-controller"
-#     namespace = "kube-system"
-#     annotations = {
-#       "eks.amazonaws.com/role-arn" = module.iam_irsa.alb_irsa_role_arn
-#     }
-#     labels = {
-#       "app.kubernetes.io/name" = "aws-load-balancer-controller"
-#     }
-#   }
-# }
-
-############################################
 # Helm release: AWS Load Balancer Controller
 # - Runs in kube-system on Fargate (your Fargate profile has the selector)
 # - Uses the ServiceAccount above (so set serviceAccount.create=false)
@@ -39,6 +22,12 @@ resource "helm_release" "aws_load_balancer_controller" {
   namespace  = "kube-system"
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
+
+  atomic          = true # succeed-or-rollback in one shot
+  wait            = true # wait for all resources to become ready
+  cleanup_on_fail = true # delete created resources if install/upgrade fails
+  timeout         = 900  # seconds; be generous on first install
+  max_history     = 2    # keep history small to avoid clutter
 
   # Required settings
   set {
