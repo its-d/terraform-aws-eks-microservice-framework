@@ -32,3 +32,21 @@ variable "identifier" {
   type        = string
   description = "A unique identifier for the resources."
 }
+
+variable "endpoint_private_access" {
+  type        = bool
+  default     = true
+  description = "Enable private (VPC) access to the EKS API endpoint"
+}
+
+variable "endpoint_public_access" {
+  type        = bool
+  default     = true
+  description = "Enable public internet access to the EKS API endpoint"
+}
+
+variable "public_access_cidrs" {
+  type        = list(string)
+  default     = ["0.0.0.0/0"] # tighten in env tfvars
+  description = "CIDRs allowed to reach the public EKS API"
+}

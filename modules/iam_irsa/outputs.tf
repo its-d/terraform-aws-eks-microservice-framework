@@ -18,3 +18,19 @@ output "alb_irsa_role_arn" {
   description = "IRSA role ARN for the AWS Load Balancer Controller"
   value       = aws_iam_role.alb_irsa.arn
 }
+
+output "aws_iam_openid_connect_provider" {
+  description = "IAM OIDC provider for the EKS cluster"
+  value       = aws_iam_openid_connect_provider.eks_oidc_provider
+}
+
+output "oidc_provider_arn" {
+  description = "ARN of the OIDC provider"
+  value       = aws_iam_openid_connect_provider.eks_oidc_provider.arn
+}
+
+
+output "oidc_issuer_host" {
+  description = "OIDC issuer host for the EKS cluster"
+  value       = replace(var.oidc_issuer_url, "https://", "")
+}

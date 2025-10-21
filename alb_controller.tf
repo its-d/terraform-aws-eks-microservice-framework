@@ -16,18 +16,18 @@
 # ServiceAccount for ALB Controller (IRSA)
 # - Annotated with the IRSA role ARN you already created in module.iam_irsa
 ############################################
-resource "kubernetes_service_account" "alb_sa" {
-  metadata {
-    name      = "aws-load-balancer-controller"
-    namespace = "kube-system"
-    annotations = {
-      "eks.amazonaws.com/role-arn" = module.iam_irsa.alb_irsa_role_arn
-    }
-    labels = {
-      "app.kubernetes.io/name" = "aws-load-balancer-controller"
-    }
-  }
-}
+# resource "kubernetes_service_account" "alb_sa" {
+#   metadata {
+#     name      = "aws-load-balancer-controller"
+#     namespace = "kube-system"
+#     annotations = {
+#       "eks.amazonaws.com/role-arn" = module.iam_irsa.alb_irsa_role_arn
+#     }
+#     labels = {
+#       "app.kubernetes.io/name" = "aws-load-balancer-controller"
+#     }
+#   }
+# }
 
 ############################################
 # Helm release: AWS Load Balancer Controller
@@ -57,11 +57,16 @@ resource "helm_release" "aws_load_balancer_controller" {
   # Use our pre-created ServiceAccount with IRSA
   set {
     name  = "serviceAccount.create"
-    value = "false"
+    value = "true"
   }
   set {
     name  = "serviceAccount.name"
-    value = kubernetes_service_account.alb_sa.metadata[0].name
+    value = "aws-load-balancer-controller"
+  }
+
+  set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = module.iam_irsa.alb_irsa_role_arn
   }
 
   # Helpful default for Fargate; you also set target type per Service via annotation
@@ -71,7 +76,7 @@ resource "helm_release" "aws_load_balancer_controller" {
   }
 
   depends_on = [
-    kubernetes_service_account.alb_sa,
+    # kubernetes_service_account.alb_sa,
     module.iam_irsa, # IRSA must exist
     module.eks       # cluster must exist
   ]

@@ -84,12 +84,14 @@ module "eks" {
   identifier  = var.identifier
   common_tags = local.common_tags
 
-  # Networking
-  private_subnet_ids = module.vpc.private_subnet_ids
-
-  # 👇 Use the actual output names from modules/iam/outputs.tf
+  private_subnet_ids     = module.vpc.private_subnet_ids
   cluster_role_arn       = module.iam.cluster_role_arn
   pod_execution_role_arn = module.iam.pod_execution_role_arn
+
+  # Endpoint access controls
+  endpoint_private_access = var.endpoint_private_access
+  endpoint_public_access  = var.endpoint_public_access
+  public_access_cidrs     = var.public_access_cidrs
 }
 
 module "iam" {
@@ -108,6 +110,14 @@ module "security" {
   vpc_id                    = module.vpc.vpc_id
   cluster_security_group_id = module.eks.cluster_security_group_id
   common_tags               = local.common_tags
+}
+
+module "storage" {
+  source                = "./modules/storage"
+  identifier            = var.identifier
+  private_subnet_ids    = module.vpc.private_subnet_ids
+  efs_security_group_id = module.security.efs_sg_id
+  common_tags           = local.common_tags
 }
 
 module "vpc" {

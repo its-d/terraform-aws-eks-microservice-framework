@@ -54,3 +54,23 @@ output "private_subnet_ids" {
   description = "Private subnet IDs used by EKS/Fargate"
   value       = module.vpc.private_subnet_ids
 }
+
+output "cluster_security_group_id" {
+  description = "EKS cluster security group ID (used by Fargate pods)"
+  value       = module.eks.cluster_security_group_id
+}
+
+output "efs_file_system_id" {
+  description = "EFS file system ID"
+  value       = module.storage
+}
+
+output "efs_access_point_id" {
+  description = "EFS access point ID for Grafana"
+  value       = module.storage.efs_access_point_id
+}
+
+output "efs_sg_id" {
+  description = "Security group ID used by EFS mount targets"
+  value       = module.security.efs_sg_id
+}
