@@ -279,14 +279,168 @@ make apply ENV=dev
 
 ---
 
-## 🔁 CI and pre-commit
+## Pre-commit & CI: what each step does, why it’s there, and how it works
 
-- Install pre-commit and run locally:
+Below are concise, copy/paste-ready explanations you can insert into your README describing the repository’s `.pre-commit-config.yaml` and `.github/workflows/ci.yml`. Each section lists the steps, what they do, and how they operate — plus the local commands you can run to mirror CI behavior.
+
+---
+
+### .pre-commit-config.yaml — purpose and hooks explained
+
+Purpose: enforce consistent formatting, linting, and basic safety checks locally (before commits). This reduces CI failures and keeps the repo clean.
+
+Key hooks configured and what they do
+- General file hygiene (pre-commit hooks)
+  - trailing-whitespace — removes any trailing whitespace from files.
+  - end-of-file-fixer — ensures files end with a newline.
+  - check-yaml — validates YAML syntax.
+  - check-json — validates JSON syntax.
+  - check-added-large-files — prevents accidentally staging very large files.
+  - check-merge-conflict — detects unresolved merge conflict markers.
+
+- Terraform helpers (pre-commit-terraform)
+  - terraform_fmt — runs `terraform fmt -recursive` to format HCL.
+  - terraform_validate — runs `terraform validate` to catch grammar/validation errors.
+  - terraform_tflint — runs tflint for policy and best-practice checks.
+  - terraform_docs — generates module docs (used by the Makefile/docs target).
+
+- Python formatting & linting
+  - black — formats Python files to a consistent style.
+  - flake8 (+ plugins) — lints Python code; configured with recommended plugins and a 100-char max line length.
+
+- YAML linting
+  - yamllint — lints YAML and enforces configured rules (line-length disabled in config).
+
+- Local/system hooks (repo: local)
+  - kubeconform (system) — validates Kubernetes manifests in `k8s/*.yaml` against a specified Kubernetes version (strict validation).
+  - add-apache-headers (addlicense) — enforces/updates Apache-2.0 license header on code files (tf, tfvars, yaml, py, sh).
+
+How it works locally
+- Install pre-commit and any system tools referenced by local hooks:
+  - python -m pip install --upgrade pip
+  - pip install pre-commit
+  - Ensure system binaries used by local hooks are present (e.g., kubeconform, addlicense).
+- Install the git hooks once in your repo:
+  - pre-commit install
+- Run all configured hooks against the whole repository (same as CI does):
+  - pre-commit run --all-files
+
+Notes / tips
+- Some hooks call system binaries (kubeconform, addlicense). CI installs those into a `.bin` directory and adds it to PATH; replicate locally by installing the same tools (brew / apt / release downloads).
+- Use `PCT_TFPATH` or configure your PATH if Terraform is not the default binary name in your environment (CI uses env var `PCT_TFPATH=terraform` when running pre-commit).
+
+---
+
+### .github/workflows/ci.yml — jobs, steps, and rationale
+
+Purpose: run repository quality checks, Terraform validation, and plan generation on pushes and pull requests. The workflow is split into logical jobs so linting runs first and blocks invalid code from proceeding to Terraform validation/plan steps.
+
+Top-level triggers and scope
+- Runs on `push` and `pull_request` events limited to Terraform files, tfvars, the pre-commit config, scripts, and workflow files. This reduces unnecessary runs for unrelated changes.
+
+Job: lint (Lint & Code Scan)
+- Checkout repository
+  - `actions/checkout` — fetches repo code so tools can scan files.
+- Setup Python
+  - `actions/setup-python` — ensures a reproducible Python runtime for pre-commit.
+- Setup Terraform
+  - `hashicorp/setup-terraform` — pins a Terraform CLI version for reproducible validation and `terraform fmt` behavior in CI.
+- Setup TFLint
+  - `terraform-linters/setup-tflint` — pins tflint to run policy/best-practice checks.
+- Cache pre-commit
+  - `actions/cache` caches pre-commit’s cache directory (`~/.cache/pre-commit`) keyed on `.pre-commit-config.yaml` so subsequent runs are faster.
+- Install CLI tools (terraform-docs, kubeconform, addlicense)
+  - CI downloads specific pinned releases (terraform-docs, kubeconform, addlicense) into a `.bin` folder and adds it to PATH so local-system hooks and doc generation can run. The script:
+    - Looks up GitHub release assets by tag.
+    - Downloads and extracts the linux/amd64 asset.
+    - Moves the executable into `.bin` and makes it executable.
+  - Rationale: local hooks reference binaries that are not Python packages; CI needs to provide those tools in PATH.
+- Install pre-commit
+  - `pip install pre-commit` so `pre-commit` is available in CI.
+- Run pre-commit hooks
+  - `pre-commit run --all-files` runs the full hook set (formatters, linters, kubeconform, addlicense). This enforces the same checks you run locally.
+
+How to reproduce the lint job locally
+1. Install the same pinned tools (terraform-docs, kubeconform, addlicense) or install equivalents to match CI versions.
+2. pip install pre-commit.
+3. Run: `pre-commit run --all-files`
+
+Job: tf-validate (Terraform validation per environment)
+- Depends on: lint (so only runs if pre-commit passed).
+- Uses matrix of environment directories (e.g., `env/dev`) — the CI job runs `terraform fmt -check -recursive` and `terraform validate` for each env directory.
+- Steps:
+  - checkout
+  - setup Terraform (same pinned CLI version)
+  - `terraform fmt -check -recursive` — ensures formatting is correct (fails CI if not).
+  - `terraform init -backend=false` (in the env directory) — initializes Terraform without remote backend so validation can run in CI without having access to state or secrets.
+  - `terraform validate` — validates the configuration in each env directory.
+
+Why init without backend?
+- Running init with `-backend=false` avoids requiring S3/DynamoDB credentials and avoids writing state during CI. It lets Terraform load providers and validate configuration safely in CI.
+
+How to run locally (per env)
 ```bash
-pre-commit install
-pre-commit run --all-files
+cd env/dev
+terraform init -backend=false
+terraform validate
 ```
-- CI should run `terraform fmt`, `terraform validate`, and pre-commit checks.
+
+Job: tf-plan (Terraform plan for PRs)
+- Runs only on pull requests and after `tf-validate`.
+- Purpose: generate a Terraform plan file for reviewers to inspect. Because CI cannot access your remote backend safely, it runs `terraform init -backend=false` and `terraform plan -out=tfplan.bin` with flags that disable state refresh/locking:
+  - `-input=false -refresh=false -lock=false`
+- After planning the job runs `terraform show -no-color tfplan.bin > tfplan.txt` and uploads the plan as an artifact so reviewers can download and inspect the proposed changes.
+
+Why plan with `-refresh=false -lock=false`?
+- Avoids requiring access to remote state/DynamoDB locks and keeps CI plan generation read-only and non-blocking. It produces a plan based solely on configuration and local tfvars in `env/<env>/` (if present).
+
+How to replicate the plan step locally (recommended only for dry-run / review)
+```bash
+cd env/dev
+terraform init -backend=false
+terraform plan -input=false -refresh=false -lock=false -out=tfplan.bin
+terraform show -no-color tfplan.bin > tfplan.txt
+```
+Then inspect `tfplan.txt` or share it with reviewers.
+
+Artifacts and caching
+- CI uploads the generated plan (`tfplan.txt`) as an artifact for PR inspection.
+- The pre-commit cache speeds up subsequent pre-commit runs on the same runner image / workflow.
+
+Pinned versions and reproducibility
+- CI pins tools (Terraform, tflint, terraform-docs, kubeconform, addlicense) to specific tags. Update these pins in the workflow script when you want to upgrade the tools. The workflow includes placeholders to add SHA256 checks for extra security after an initial verification run.
+
+Secrets and tokens used
+- `GITHUB_TOKEN` is used to access GitHub API (when looking up releases) and is injected by GitHub Actions automatically for CI jobs.
+- CI does not require AWS credentials to run these validation steps because it initializes Terraform with `-backend=false` and avoids accessing remote state.
+
+---
+
+## Quick copy/paste snippet (for README)
+
+You can paste this smaller snippet into your README to explain both files in one place:
+
+```markdown
+### Pre-commit & CI — what they run and why
+
+- `.pre-commit-config.yaml` runs local checks before commits:
+  - file hygiene (trim whitespace, add newline), YAML/JSON validation, large file checks.
+  - Terraform formatting/validation/tflint and terraform-docs generation.
+  - Python formatting (black) and linting (flake8 + plugins).
+  - Kubernetes manifest validation via kubeconform and license header enforcement via addlicense.
+  - Run locally:
+    - `pip install pre-commit`
+    - `pre-commit install`
+    - `pre-commit run --all-files`
+
+- `.github/workflows/ci.yml` runs CI checks on push/PR:
+  - Lint job: checkout, setup Python & Terraform, install pinned CLI tools (terraform-docs, kubeconform, addlicense), install pre-commit, run `pre-commit run --all-files`.
+  - tf-validate job: runs `terraform fmt -check`, `terraform init -backend=false`, `terraform validate` for env dirs.
+  - tf-plan job (PRs): runs `terraform plan -out=tfplan.bin -input=false -refresh=false -lock=false`, converts to `tfplan.txt`, uploads as an artifact for reviewers.
+  - CI avoids using remote backend (init uses `-backend=false`) so it doesn't need S3/DynamoDB credentials.
+  - Locally reproduce CI validation with:
+    - `terraform init -backend=false` and `terraform validate` in `env/<env>`; for plan: `terraform plan -input=false -refresh=false -lock=false -out=tfplan.bin` then `terraform show -no-color tfplan.bin > tfplan.txt`.
+```
 
 ---
 
