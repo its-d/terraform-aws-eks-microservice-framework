@@ -62,6 +62,31 @@ _state_rm_k8s:
 	# Fallback: strip any other lingering k8s/helm entries
 	-@$(TF) state list 2>/dev/null | egrep '^(helm_release|kubernetes_)' | xargs -r $(TF) state rm >/dev/null 2>&1 || true
 
+# --- Pre-clean AWS networking (ALBs first, then any ENIs in this VPC) ---
+_aws_net_purge:
+	@echo "$(YELLOW)🧼 Pre-cleaning ALBs & ENIs in this env$(RESET)"
+	# detect region and vpc (fallback-safe)
+	@REGION="$$(grep '^region' $(TFVARS) | awk '{print $$3}' | tr -d '"')" ; \
+	VPC_ID="$$(terraform output -raw vpc_id 2>/dev/null || true)" ; \
+	[ -z "$$REGION" ] && REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}" ; \
+	echo "  → region=$$REGION vpc=$$VPC_ID" ; \
+	\
+	# delete ALBs first
+	-@aws elbv2 describe-load-balancers --region $$REGION \
+	  --query 'LoadBalancers[?VpcId==`'$$VPC_ID'`].LoadBalancerArn' --output text 2>/dev/null | \
+	  xargs -r -n1 aws elbv2 delete-load-balancer --region $$REGION --load-balancer-arn >/dev/null 2>&1 || true ; \
+	\
+	# then remove leftover ENIs (detach if attached)
+	-@for eni in $$(aws ec2 describe-network-interfaces --region $$REGION \
+	      --filters Name=vpc-id,Values=$$VPC_ID \
+	      --query 'NetworkInterfaces[].{Id:NetworkInterfaceId,Att:Attachment.AttachmentId}' \
+	      --output text 2>/dev/null); do \
+	    set -- $$eni; ENI=$$1; ATT=$$2; \
+	    if [ "$$ATT" != "None" ] && [ -n "$$ATT" ]; then \
+	      aws ec2 detach-network-interface --region $$REGION --attachment-id $$ATT >/dev/null 2>&1 || true; \
+	    fi; \
+	    aws ec2 delete-network-interface --region $$REGION --network-interface-id $$ENI >/dev/null 2>&1 || true; \
+	  done
 
 init: _guard_backend  ## Initialize Terraform in root and all module folders (skip hidden dirs)
 	@echo "$(YELLOW)🚀 Initializing Terraform (root) with backend $(BACKEND)$(RESET)"
@@ -84,6 +109,7 @@ apply: ## apply last plan file
 # --- Your destroy, now with the two steps above first ---
 destroy: _guard_tfvars
 	@echo "$(YELLOW)💣 Destroying $(ENV)$(RESET)"
+	$(MAKE) _aws_net_purge
 	$(MAKE) _force_k8s_purge
 	$(MAKE) _state_rm_k8s
 	@$(TF) destroy -var-file=$(TFVARS)

@@ -5,7 +5,6 @@
 # and fill in the placeholders. Do NOT commit real credentials or secrets.
 ###############################################################################
 
-account_id              = "1234567890"         # AWS account where the infrastructure will be deployed
 region                  = "us-east-1"          # AWS region where the EKS cluster will be deployed
 environment             = "dev"                # Environment name (e.g., dev, staging, prod)
 owner                   = "YOUR_NAME_HERE"     # Used for tagging and ownership tracking

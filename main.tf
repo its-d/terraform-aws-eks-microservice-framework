@@ -88,6 +88,7 @@ module "eks" {
   endpoint_private_access = var.endpoint_private_access
   endpoint_public_access  = var.endpoint_public_access
   public_access_cidrs     = var.public_access_cidrs
+  depends_on              = [module.vpc]
 }
 
 module "iam" {
@@ -99,6 +100,7 @@ module "iam_irsa" {
   source          = "./modules/iam_irsa"
   common_tags     = local.common_tags
   oidc_issuer_url = module.eks.oidc_issuer_url
+  depends_on      = [module.eks]
 }
 
 module "security" {
@@ -106,6 +108,7 @@ module "security" {
   vpc_id                    = module.vpc.vpc_id
   cluster_security_group_id = module.eks.cluster_security_group_id
   common_tags               = local.common_tags
+  depends_on                = [module.eks]
 }
 
 module "storage" {
@@ -124,7 +127,10 @@ module "grafana" {
   efs_access_point_id    = module.storage.efs_access_point_id
   grafana_admin_password = var.grafana_admin_password
   grafana_admin_user     = var.grafana_admin_user
-
+  depends_on = [
+    module.eks,
+    helm_release.aws_load_balancer_controller
+  ]
 }
 
 module "vpc" {
