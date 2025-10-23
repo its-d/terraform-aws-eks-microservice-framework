@@ -1,89 +1,86 @@
 # 🤝 Contributing Guide
 
-Thank you for your interest in contributing to **terraform-aws-eks-microservice-framework**!
+Thank you for contributing!
 
 ---
 
-## 🧩 Contribution Workflow
+## Contribution Workflow
 
-1. **Fork** the repository and create a feature branch:
-   ```bash
-   git checkout -b feature/my-improvement
-   ```
-
-2. **Run all pre-commit checks** before pushing:
-   ```bash
-   pre-commit run --all-files
-   ```
-
-3. **Test your Terraform changes**:
-   ```bash
-   make plan ENV=dev
-   ```
-
-4. **Submit a Pull Request (PR)** describing your change and its purpose.
-
----
-
-## 🧰 Local Setup
-
-### Prerequisites
-- Terraform >= 1.6
-- AWS CLI (authenticated with appropriate permissions)
-- Python >= 3.10
-- pre-commit (`pip install pre-commit`)
-
-### Recommended Extensions
-- **VSCode Terraform Extension**
-- **YAML / JSON Linter**
-- **Prettier** for consistent formatting
-
----
-
-## 🧪 Testing
-
-You can spin up isolated test environments using environment-specific `.tfvars` files under `/env`.
-
-Example:
+1. Fork the repository and create a feature branch:
 ```bash
-make apply ENV=dev
+git checkout -b feature/my-change
 ```
 
-Run unit-like checks via Terraform’s built-in validation:
+2. Implement changes; run formatting and tests locally:
 ```bash
+make fmt
+pre-commit run --all-files
 terraform validate
-tflint
 ```
 
----
-
-## 🔍 Code Style
-
-- Follow **Terraform naming conventions** for variables and outputs.
-- Use **snake_case** for variables, **kebab-case** for resources.
-- Every file must contain the **Apache-2.0 license header**.
-- Keep modules **small and reusable**.
-
----
-
-## 📦 Submitting Modules
-
-Each module should:
-- Be self-contained (`main.tf`, `variables.tf`, `outputs.tf`).
-- Contain a `README.md` explaining usage.
-- Have `examples/` if complex.
-
----
-
-## 🚀 Deployment Verification
-
-Ensure new or updated resources deploy cleanly via:
+3. Run a plan for an isolated environment:
 ```bash
-make apply ENV=dev
-kubectl get pods -A
-kubectl get svc -A
+cp terraform.tfvars.example env/dev/terraform.tfvars
+# edit env/dev/terraform.tfvars
+make plan ENV=dev
 ```
 
-Once verified, commit and push your changes!
+4. Push your branch and open a PR describing the change, motivation, and verification steps.
+
+---
+
+## Local Development & Testing
+
+- Formatting:
+```bash
+make fmt
+```
+
+- Validation:
+```bash
+make validate
+tflint  # if installed
+```
+
+- Generating docs for modules:
+```bash
+make docs
+```
+
+- Pre-commit:
+```bash
+pre-commit install
+pre-commit run --all-files
+```
+
+---
+
+## Module Guidelines
+
+- Each module should be self-contained:
+  - main.tf
+  - variables.tf
+  - outputs.tf
+  - README.md (module level)
+  - examples/ (optional but recommended)
+- Keep modules small and focused.
+- Use variables for all environment-specific values — avoid hard-coded ARNs or regions.
+
+---
+
+## PR Requirements
+
+- All changes must pass pre-commit checks.
+- Add/Update module README when adding or significantly changing a module.
+- Document breaking changes in CHANGELOG.md.
+- Tag reviewers and add a clear description of the impact.
+
+---
+
+## Secrets & Sensitive Values
+
+- Never commit secrets or credentials.
+- Use env/<env>/terraform.tfvars only locally; add env/* to .gitignore if necessary.
+- Use SSM Parameter Store / Secrets Manager for production secrets if desired.
 
 ---

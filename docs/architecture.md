@@ -1,107 +1,65 @@
 # 🏗️ Architecture Overview
 
-This document provides a detailed breakdown of the architecture implemented by the **terraform-aws-eks-microservice-framework**.
+This document explains the architecture implemented by the terraform-aws-eks-microservice-framework and maps the Terraform modules to the runtime components.
 
 ---
 
-## 🔧 Core Components
+## Core Components & Responsibilities
 
-### 1. **VPC Module**
-Creates a dedicated AWS VPC with:
-- Public and private subnets across multiple Availability Zones.
-- Internet and NAT Gateways for public/private routing.
-- Route tables and subnet associations.
+1. VPC Module
+   - Creates a VPC with public/private subnets across AZs.
+   - NAT gateways, route tables, and subnet associations.
+   - Produces subnet IDs consumed by EKS or other modules.
 
-**Purpose:** Isolates workloads and provides scalable, secure networking.
+2. EKS Module
+   - Creates the EKS control plane (managed by AWS).
+   - Uses Fargate profiles to run pods serverless (no EC2 nodegroups by default).
+   - Outputs kubeconfig and cluster details that operators use with kubectl.
 
----
+3. IAM / IRSA Modules
+   - Create IAM roles and policies needed by the cluster.
+   - Configure IRSA (IAM Roles for Service Accounts) for controllers such as the AWS Load Balancer Controller, Grafana, etc.
+   - Keeps permissions scoped to the minimum needed.
 
-### 2. **EKS Module**
-Provisions the **Amazon Elastic Kubernetes Service (EKS)** control plane using Terraform.
-This setup is **Fargate-only**, meaning no EC2 worker nodes are required.
+4. Security Module
+   - Creates security groups used by load balancers and pods.
+   - Defines ingress/egress rules used by the NLB/ALB and application ports.
 
-Includes:
-- EKS Cluster creation.
-- Fargate Profiles for `kube-system` and `default` namespaces.
-- Cluster authentication and kubeconfig outputs.
+5. AWS Load Balancer Controller (Helm via Terraform)
+   - Deploys controller that converts Kubernetes Service/Ingress resources into AWS ELB resources (ALB/NLB).
+   - Uses IRSA for permissions to manage ELB resources.
 
-**Purpose:** Provides a fully managed Kubernetes control plane and serverless compute.
+6. App Module & k8s Manifests
+   - Example `hello-world` manifests show how services will be exposed via an NLB.
+   - App module templates and outputs are designed so teams can plug in their own images and services.
 
----
-
-### 3. **IAM Modules**
-- **IAM Core:** Handles the creation of cluster and admin roles (EKS cluster, node groups, etc.).
-- **IAM IRSA:** Manages *IAM Roles for Service Accounts (IRSA)* to grant specific Kubernetes pods AWS permissions without sharing credentials.
-
-**Purpose:** Implements least-privilege IAM access for Kubernetes workloads and controllers.
-
----
-
-### 4. **Security Module**
-Creates dedicated **Security Groups** and rules for:
-- Public NLB ingress (port 80, optional HTTPS).
-- Egress to all destinations.
-- Optional app-level ingress rules (e.g., port 5678 for `hello-world`).
-
-**Purpose:** Controls network access between external clients, load balancers, and Fargate pods.
+7. Monitoring / Grafana
+   - Optional Grafana deployment (variables exposed in modules/grafana).
+   - Admin credentials are provided via tfvars (sensitive).
 
 ---
 
-### 5. **AWS Load Balancer Controller**
-Deployed via Helm using Terraform.
-Responsible for:
-- Automatically provisioning NLBs or ALBs for Kubernetes Services.
-- Managing DNS registration and lifecycle.
+## Data Flow
 
-**Purpose:** Enables native AWS load balancing for Kubernetes services.
+Internet -> NLB (or ALB) -> Security Group -> Fargate Pod -> EKS Control Plane -> AWS Services
 
----
-
-### 6. **Kubernetes Layer**
-Contains the application manifests in `/k8s`:
-- `deployment-hello-world.yaml` → A simple HTTP echo app (`hashicorp/http-echo`).
-- `service-hello-world.yaml` → Exposes the app publicly via an internet-facing NLB.
-
-**Purpose:** Validates infrastructure and ensures successful Fargate + NLB communication.
+- The AWS Load Balancer Controller observes Services/Ingress in Kubernetes and creates the corresponding AWS load balancer resources (target groups, listeners).
+- Fargate pods use ENIs for networking; these ENIs live in your VPC and can prevent deletion of VPC/subnet resources if not removed first.
 
 ---
 
-## 🔄 Data Flow
+## Resilience & Security Patterns
 
-```
-Internet
-   │
-   ▼
-Network Load Balancer (NLB)
-   │
-   ▼
-AWS Security Group (ingress 80 → 5678)
-   │
-   ▼
-Fargate Pod (hello-world)
-   │
-   ▼
-EKS Cluster (managed by Terraform)
-   │
-   ▼
-VPC Subnets / Route Tables
-```
+- IRSA for least-privilege pod permissions.
+- Separate environments via `env/<env>/terraform.tfvars`.
+- Remote state via S3 and DynamoDB (locking) to prevent concurrent modifications.
 
 ---
 
-## 🔐 Security Model
+## Extending the Architecture
 
-- **IAM IRSA**: Grants AWS permissions to Kubernetes pods using service accounts.
-- **Least Privilege**: All IAM policies scoped per service.
-- **Network Isolation**: Each environment (dev, prod) can use isolated subnets and SGs.
-- **No EC2 dependency**: Fargate abstracts node management and patching.
-
----
-
-## 📈 Scalability
-
-- Add new services by creating new namespaces and deployments.
-- Horizontal scaling handled by Kubernetes’ Deployment autoscaling.
-- Additional Fargate profiles can be added per namespace for cost control.
+- Add additional Fargate profiles per namespace for cost separation.
+- Add node groups (EC2) if workloads require host-level access or special drivers.
+- Add service mesh or ingress controller if you need L7 routing features not provided by NLB.
 
 ---
