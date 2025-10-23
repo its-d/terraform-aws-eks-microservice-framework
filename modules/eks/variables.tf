@@ -17,6 +17,12 @@ variable "common_tags" {
   default     = {}
 }
 
+variable "region" {
+  type        = string
+  description = "The AWS region to deploy the EKS cluster in."
+
+}
+
 variable "private_subnet_ids" {
   type        = list(string)
   description = "A list of subnet IDs for the EKS cluster."

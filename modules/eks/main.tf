@@ -43,11 +43,6 @@ resource "aws_eks_fargate_profile" "fargate_profile" {
 
   selector {
     namespace = "kube-system"
-  }
-
-  # CoreDNS pods
-  selector {
-    namespace = "kube-system"
     labels = {
       k8s-app = "kube-dns"
     }
@@ -62,4 +57,41 @@ resource "aws_eks_fargate_profile" "fargate_profile" {
   }
 
   tags = var.common_tags
+}
+
+resource "null_resource" "patch_coredns_fargate" {
+  # Re-run if the cluster endpoint changes (new cluster)
+  triggers = {
+    cluster_endpoint = aws_eks_cluster.eks_cluster.endpoint
+  }
+
+  depends_on = [
+    aws_eks_cluster.eks_cluster,
+    aws_eks_fargate_profile.fargate_profile
+  ]
+
+  provisioner "local-exec" {
+    # (Optional) ensure kubeconfig is updated for this cluster
+    command = <<-EOC
+      set -euo pipefail
+      aws eks update-kubeconfig --name ${aws_eks_cluster.eks_cluster.name} --region ${var.region}
+      kubectl -n kube-system patch deployment coredns \
+        -p '{
+          "spec": {
+            "template": {
+              "spec": {
+                "nodeSelector": {"eks.amazonaws.com/compute-type":"fargate"},
+                "tolerations": [{
+                  "key":"eks.amazonaws.com/compute-type",
+                  "operator":"Equal",
+                  "value":"fargate",
+                  "effect":"NoSchedule"
+                }]
+              }
+            }
+          }
+        }'
+      kubectl -n kube-system rollout status deploy/coredns --timeout=120s
+    EOC
+  }
 }

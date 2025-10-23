@@ -30,9 +30,7 @@ terraform {
     }
   }
 
-  backend "local" {
-    path = "terraform.tfstate"
-  }
+  backend "s3" {}
 }
 
 # Ask AWS for live EKS connection details (no kubeconfig needed)
@@ -80,15 +78,13 @@ module "app" {
 }
 
 module "eks" {
-  source      = "./modules/eks/"
-  identifier  = var.identifier
-  common_tags = local.common_tags
-
-  private_subnet_ids     = module.vpc.private_subnet_ids
-  cluster_role_arn       = module.iam.cluster_role_arn
-  pod_execution_role_arn = module.iam.pod_execution_role_arn
-
-  # Endpoint access controls
+  source                  = "./modules/eks/"
+  identifier              = var.identifier
+  region                  = var.region
+  common_tags             = local.common_tags
+  private_subnet_ids      = module.vpc.private_subnet_ids
+  cluster_role_arn        = module.iam.cluster_role_arn
+  pod_execution_role_arn  = module.iam.pod_execution_role_arn
   endpoint_private_access = var.endpoint_private_access
   endpoint_public_access  = var.endpoint_public_access
   public_access_cidrs     = var.public_access_cidrs
@@ -123,6 +119,7 @@ module "storage" {
 module "grafana" {
   source                 = "./modules/grafana"
   identifier             = var.identifier
+  region                 = var.region
   efs_file_system_id     = module.storage.efs_file_system_id
   efs_access_point_id    = module.storage.efs_access_point_id
   grafana_admin_password = var.grafana_admin_password

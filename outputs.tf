@@ -62,7 +62,7 @@ output "cluster_security_group_id" {
 
 output "efs_file_system_id" {
   description = "EFS file system ID"
-  value       = module.storage
+  value       = module.storage.efs_file_system_id
 }
 
 output "efs_access_point_id" {
