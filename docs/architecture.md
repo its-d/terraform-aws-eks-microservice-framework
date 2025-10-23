@@ -25,11 +25,7 @@
    - Deploys controller that converts Kubernetes Service/Ingress resources into AWS ELB resources (ALB/NLB).
    - Uses IRSA for permissions to manage ELB resources.
 
-6. App Module & k8s Manifests
-   - Example `hello-world` manifests show how services will be exposed via an NLB.
-   - App module templates and outputs are designed so teams can plug in their own images and services.
-
-7. Monitoring: Grafana backed by EFS (Ready-to-use)
+6. Monitoring: Grafana backed by EFS (Ready-to-use)
    - Grafana is deployed as part of the stack and can be backed by an EFS file system and access point.
    - EFS provides persistent storage for Grafana configuration, dashboards, plugins, and data that must survive pod restarts and cluster reprovisioning.
    - Integration is done via a Kubernetes PersistentVolumeClaim that mounts an EFS-backed PersistentVolume — the module expects `efs_file_system_id` and `efs_access_point_id` tfvars if you want to enable this.

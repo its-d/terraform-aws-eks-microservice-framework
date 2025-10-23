@@ -122,11 +122,11 @@ We use a remote S3 backend with optional DynamoDB locking. Create a local `backe
 
 Example backend.hcl:
 ```hcl
-bucket         = "my-terraform-state-bucket"
-key            = "terraform-aws-eks-microservice-framework/ENV/terraform.tfstate" # use per-environment path
+bucket         = "terraform-state-bucket"
+key            = "PATH/ENV/terraform.tfstate" # use per-environment path
 region         = "us-east-1"
 encrypt        = true
-dynamodb_table = "my-terraform-state-locks"  # optional but recommended
+dynamodb_table = "terraform-state-lock"  # optional but recommended
 acl            = "private"
 role_arn       = "arn:aws:iam::123456789012:role/CI-Terraform-Role" # optional
 ```
@@ -274,21 +274,7 @@ make plan ENV=dev
 make apply ENV=dev
 ```
 
-7. Configure kubectl:
-```bash
-aws eks update-kubeconfig --name <cluster_name_from_outputs> --region <region>
-# Use terraform output to find cluster name if needed
-terraform output -json | jq .
-```
-
-8. Deploy sample app:
-```bash
-kubectl apply -f k8s/deployment-hello-world.yaml
-kubectl apply -f k8s/service-hello-world.yaml
-kubectl get svc -w hello-world
-```
-
-9. Grafana access:
+7. Grafana access:
 - After apply, get Grafana service/endpoint via `kubectl get svc -n monitoring` or from Terraform outputs. Grafana is backed by the EFS created by Terraform (when enabled), so dashboards persist across pod restarts.
 
 ---
