@@ -1,215 +1,242 @@
 # 🚀 terraform-aws-eks-microservice-framework
 
-A modular, production-ready Terraform framework for deploying Amazon EKS and running microservices (Fargate-backed). This repository provisions networking, IAM/IRSA, EKS control plane, the AWS Load Balancer Controller, and example app manifests so teams can stand up a repeatable EKS environment.
+A modular, production-ready Terraform framework for deploying Amazon EKS and running microservices (Fargate-backed). This repository provisions networking, IAM/IRSA, the EKS control plane, the AWS Load Balancer Controller, and a ready-to-use Grafana deployment with persistent storage managed by Amazon EFS so teams can stand up a repeatable EKS environment with durable monitoring storage.
 
 ---
 
 ## 🎯 Project / Goal / Who this is for
 
-- Goal: Provide a repeatable, auditable baseline to provision an EKS cluster (Fargate profiles), application scaffolding, monitoring (Grafana), and ALB/NLB integration using Terraform modules.
-- Who it's for: Infrastructure engineers and platform teams who want an opinionated Terraform starting point for microservice deployments on AWS EKS with least-privilege IAM and modular architecture.
-- Typical uses: PoC, staging, and production clusters where you want Terraform-driven infra + Kubernetes manifests managed by developers/operators.
+- Goal: Provide a repeatable, auditable baseline to provision an full EKS platform (Fargate profiles), CI-friendly Terraform modules, monitoring (Grafana with persistent EFS storage), and load balancing integration (ALB/NLB) using opinionated, modular Terraform.
+- Who it's for: Infrastructure engineers, platform teams, and DevOps who need a production-oriented starting point for microservice deployments on AWS EKS with least-privilege IAM and clear operational procedures.
+- Typical uses: PoC, staging, and production clusters where Terraform manages infrastructure and provides an out-of-the-box Grafana that persists dashboards and plugins across redeploys.
 
 ---
 
-## ⚙️ Prerequisites (clean machine)
+## ⚙️ Prerequisites (fresh machine)
 
-Below are the tooling packages someone needs to install from a clean OS. Commands are examples — adapt for your OS/version.
+Minimum recommended (tested): Terraform >= 1.6, AWS CLI v2, Helm >= 3.8, kubectl matching EKS control plane, Python >= 3.10.
 
-Minimum recommended pinned versions (tested): Terraform >= 1.6, AWS CLI v2, Helm >= 3.8, kubectl compatible with the EKS control plane version, Python >= 3.10.
+Recommended packages (install on a fresh machine):
 
 - System tools
   - git
   - make
-  - unzip
-  - curl
+  - curl, unzip
   - jq (JSON CLI helper)
-  - yq (YAML CLI helper, optional)
-- Docker (for building images, optional): Docker Desktop (macOS/Windows) or docker-ce (Linux)
+  - yq (YAML CLI helper)
+- Docker Desktop (macOS/Windows) or docker-ce (Linux) — optional for building images
 - Terraform CLI (>= 1.6)
 - AWS CLI v2
-- kubectl (matches EKS control plane: use aws eks update-kubeconfig after cluster creation)
-- eksctl (optional; not required if you only use Terraform, but useful for quick EKS workflows)
+- kubectl
+- eksctl (optional; useful for some dev workflows)
 - Helm (>= 3.8)
-- Python 3.10+ and pip (for pre-commit hooks)
+- Python 3.10+ and pip
 - pre-commit (pip install pre-commit)
-- terraform-docs (used by Make docs target)
-- tflint (optional; recommended)
-- kubeconform (optional; used in pre-commit for Kubernetes manifest validation)
-- Node.js + npm (optional — repo does not require node by default; include only if you add frontend tooling)
-- Windows users: consider using WSL2 (Ubuntu) for consistent behavior with the Makefile.
+- terraform-docs (used by the Makefile docs target)
+- tflint (optional, recommended)
+- kubeconform (optional — used by pre-commit for k8s manifest validation)
+- Node.js + npm (optional; not required by the repo by default)
+- Windows: we recommend WSL2 (Ubuntu) for consistent Makefile behavior
 
-Installation examples:
+Installation examples
 
 macOS (Homebrew)
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 brew update
 brew install git make terraform awscli kubectl helm jq yq python3 pre-commit terraform-docs tflint
-# Docker Desktop from https://www.docker.com/products/docker-desktop
+# Install Docker Desktop from Docker site
 ```
 
-Ubuntu (apt)
+Ubuntu (apt + distribution installers)
 ```bash
 sudo apt update && sudo apt install -y git make unzip curl jq
-# Install Terraform (recommended: HashiCorp apt repository)
-# Install AWS CLI v2 (bundled installer)
-# Install kubectl via apt or from k8s.io
-# Install helm via script or apt
+# Install Terraform via HashiCorp apt repo
+# Install AWS CLI v2 via bundled installer
+# Install kubectl and helm per vendor instructions
 python3 -m pip install --user pre-commit terraform-docs
 ```
 
 Windows
-- Use WSL2 (Ubuntu) or use native installers for Terraform, AWS CLI, Docker Desktop, kubectl, Helm.
-- Alternatively: winget / choco for installers.
+- Use WSL2 (Ubuntu recommended) or install native tools (Terraform, AWS CLI, kubectl, Helm, Docker Desktop) using choco/winget.
 
 ---
 
 ## 🔐 AWS account and credentials
 
-- Configure AWS credentials for the profile you'll use:
-  - aws configure --profile <profile>
-  - Or set AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_SESSION_TOKEN and AWS_DEFAULT_REGION.
-- The account should have permissions to create IAM roles, S3/DynamoDB (for remote state), EKS clusters, VPC resources, and ELB/ALB target groups.
+- Configure credentials:
+  - `aws configure --profile <profile>` or set environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, AWS_DEFAULT_REGION.
+- Required permissions:
+  - Create IAM roles/policies, EKS clusters, VPC resources, EC2 ENIs, ELB/ALB resources, EFS resources (if Terraform will create them), S3/DynamoDB for state.
 
 ---
 
 ## 🗂 Repository structure (relevant parts)
 
-- main.tf — root orchestration of modules
-- variables.tf — global inputs
-- output.tf — exported outputs
-- backend.tf — backend configuration placeholder (see below)
-- alb_controller.tf — AWS Load Balancer Controller (Helm)
-- Makefile — common workflow targets (init, plan, apply, destroy, etc.)
-- modules/* — VPC, EKS, IAM, Grafana, app, etc.
-- env/<env>/terraform.tfvars — environment-specific variables (create these)
-- k8s/* — sample Kubernetes manifests
-- docs/* — architecture, contributing, troubleshooting
+- `main.tf` — root orchestration of modules
+- `variables.tf` — global inputs
+- `output.tf` — exported outputs
+- `backend.tf` — remote state backend config placeholder
+- `alb_controller.tf` — AWS Load Balancer Controller Helm configuration
+- `Makefile` — convenience workflow targets (init, plan, apply, destroy, etc.)
+- `modules/*` — VPC, EKS, IAM, Grafana, app, etc.
+- `env/<env>/terraform.tfvars` — environment-specific variables (create these)
+- `k8s/*` — sample Kubernetes manifests
+- `docs/*` — architecture, contributing, troubleshooting
 
 ---
 
-## 🔧 Backend (backend.hcl) — example & explanation
+## 📌 Grafana (ready-to-use) with EFS — primary feature
 
-This repo expects a remote state backend in S3 with optional DynamoDB state locking. Create a backend.hcl (local file, not committed) and supply it when running terraform init (or configure in CI).
+This repository includes a Grafana deployment wired to persistent storage managed by Amazon EFS.
+
+Important behavioral note (DO NOT put EFS IDs in tfvars for the default workflow)
+- The repo's Grafana/EFS integration is implemented so that Terraform creates and manages the EFS resources (file system, access point, mount targets) when the feature is enabled. After `terraform apply`, Terraform will output the created EFS IDs.
+- You should **not** supply `efs_file_system_id` or `efs_access_point_id` in `env/<env>/terraform.tfvars` for the default workflow — those are produced by Terraform, not required as inputs.
+- If you intentionally want to reuse an existing EFS created outside this repo, that is an advanced/custom workflow. In that case you must modify the module input surface to accept external EFS IDs (this repo currently manages EFS by default).
+
+What is created (when enabled)
+- aws_efs_file_system
+- aws_efs_access_point
+- mount targets in required subnets
+- security group rules to allow NFS (TCP/2049) from the cluster ENIs
+
+How to confirm
+```bash
+# after make apply / terraform apply
+terraform state list | grep -i efs || true
+terraform output efs_file_system_id
+terraform output efs_access_point_id
+terraform output -json | jq .
+```
+
+Security considerations
+- EFS mount security groups must allow NFS (TCP/2049) from the cluster's ENIs or worker nodes.
+- The module typically configures mount targets and SG rules for you when it creates EFS.
+
+---
+
+## 🔧 Backend (backend.hcl) — example & required fields
+
+We use a remote S3 backend with optional DynamoDB locking. Create a local `backend.hcl` (do not commit) and supply it when running `terraform init`.
 
 Example backend.hcl:
 ```hcl
 bucket         = "my-terraform-state-bucket"
-key            = "terraform-aws-eks-microservice-framework/terraform.tfstate" # path to state file
+key            = "terraform-aws-eks-microservice-framework/ENV/terraform.tfstate" # use per-environment path
 region         = "us-east-1"
 encrypt        = true
-dynamodb_table = "my-terraform-state-locks" # optional but recommended for locks
+dynamodb_table = "my-terraform-state-locks"  # optional but recommended
 acl            = "private"
-role_arn       = "arn:aws:iam::123456789012:role/CI-Terraform-Role" # optional (use if assuming a role)
+role_arn       = "arn:aws:iam::123456789012:role/CI-Terraform-Role" # optional
 ```
 
 Fields to populate:
-- bucket — an existing S3 bucket you or your organization controls
-- key — path within bucket to store the state file (per environment is recommended)
-- region — bucket region
-- encrypt — true recommended
-- dynamodb_table — create a DynamoDB table with Partition Key "LockID" if you want state locking
-- role_arn — optional IAM role to assume for Terraform runs
+- `bucket` — existing S3 bucket you control
+- `key` — state file path; include ENV to separate environments
+- `region` — S3 bucket region
+- `encrypt` — true recommended
+- `dynamodb_table` — for state locking (create table with PartitionKey "LockID")
+- `role_arn` — optional IAM role to assume for Terraform runs
 
-How to use:
-- keep backend.hcl locally (do not commit).
-- terraform init -backend-config=backend.hcl
+Usage:
+```bash
+terraform init -backend-config=backend.hcl
+# or use Makefile: make init ENV=dev
+```
 
 ---
 
-## 🧾 Environment tfvars — path and required fields
+## 🧾 Environment tfvars — location and required fields
 
-Makefile uses: env/$(ENV)/terraform.tfvars as the env TFVARS file. Example file is terraform.tfvars.example. You must copy that example into env/dev/terraform.tfvars (or env/prod/...) and populate values.
+The Makefile expects `env/$(ENV)/terraform.tfvars`. Copy `terraform.tfvars.example` to `env/dev/terraform.tfvars` and populate the values.
 
-Minimum fields from terraform.tfvars.example and modules:
-- region = "us-east-1"
-- environment = "dev"
-- owner = "YOUR_NAME"
-- identifier = "project-prefix"
-- endpoint_private_access = true / false
-- endpoint_public_access = true / false
-- public_access_cidrs = ["x.x.x.x/32"] (if public access)
-- grafana_admin_user = "admin" (if using Grafana)
-- grafana_admin_password = "secure-password"
+Minimum fields (from terraform.tfvars.example and module variables):
+- `region` — AWS region (e.g., "us-east-1")
+- `environment` — environment name (e.g., "dev")
+- `owner` — owner tag / contact
+- `identifier` — short prefix for resource names
+- `endpoint_private_access` — true/false
+- `endpoint_public_access` — true/false
+- `public_access_cidrs` — list of CIDRs allowed for public API access
+- `grafana_admin_user` — Grafana admin username
+- `grafana_admin_password` — Grafana admin password (sensitive)
 
-Other module variables (may be required depending on your module inputs):
-- private_subnet_ids = ["subnet-...","subnet-..."] (if you supply your own subnets)
-- cluster_role_arn = "arn:aws:iam::...:role/eks-cluster-role" (if you pre-create a role)
-- pod_execution_role_arn = "arn:aws:iam::...:role/eks-pod-exec" (IRSA/pod execution role)
+Note about EFS:
+- Do NOT set `efs_file_system_id` or `efs_access_point_id` in `env` tfvars for the default behavior; Terraform creates and manages those resources. If you intentionally want to override with an external EFS, you must modify the module to accept external IDs (advanced workflow).
 
-Important:
-- Do not commit real credentials. Add env/* to .gitignore if you haven't already.
-- Use a unique identifier for resource naming to avoid collisions across environments.
+Other possible inputs you may need depending on your usage:
+- `private_subnet_ids` — if using existing subnets
+- `cluster_role_arn` — if pre-creating cluster IAM role
+- `pod_execution_role_arn` — pod execution role for IRSA
+
+Security:
+- Never commit real credentials. Add `env/*` to `.gitignore` to avoid accidental commits.
 
 ---
 
 ## 🧭 Makefile: targets and explanations
 
-Makefile (root) provides convenience wrappers around Terraform and repo tooling. Exact targets present:
+High-level targets (see Makefile for exact behavior):
 
-- init
-  - Purpose: Run terraform init -upgrade in root and then in each module directory.
-  - Use: first step after cloning and creating backend.hcl & env tfvars.
-  - Example: make init ENV=dev
-  - Notes: Runs init on each module to ensure plugin/downloads and module-level backend configs are set up.
+- `init`
+  - Initializes Terraform in root and each module: `terraform init -upgrade`
+  - Use after cloning & creating `backend.hcl` and `env/*/terraform.tfvars`.
+  - Example: `make init ENV=dev`
 
-- plan
-  - Purpose: terraform plan using env tfvars; writes plan to plan-<env>.tfplan
-  - Guard: fails if env/$(ENV)/terraform.tfvars is missing.
-  - Example: make plan ENV=dev
+- `plan`
+  - Runs `terraform plan -var-file=env/$(ENV)/terraform.tfvars -out=plan-$(ENV).tfplan`
+  - Guard: fails if TFVARS missing.
+  - Example: `make plan ENV=dev`
 
-- apply
-  - Purpose: terraform apply using the generated plan file plan-<env>.tfplan
-  - Example: make apply ENV=dev
+- `apply`
+  - Applies the previously created plan file: `terraform apply "plan-$(ENV).tfplan"`
 
-- destroy
-  - Purpose: terraform destroy -var-file=$(TFVARS)
-  - Example: make destroy ENV=dev
-  - IMPORTANT ordering note (see below on ENIs / Kubernetes resources)
+- `destroy`
+  - Runs `terraform destroy -var-file=env/$(ENV)/terraform.tfvars`
+  - IMPORTANT: follow the resource removal ordering below to avoid "resource in use" errors.
 
-- validate
-  - Purpose: terraform validate (root)
-
-- fmt
-  - Purpose: terraform fmt -recursive
-
-- lint
-  - Purpose: runs pre-commit checks across repository (formatting, linting, kubeconform, etc.)
-
-- docs
-  - Purpose: generate Terraform docs for each module using terraform-docs
-
-- clean
-  - Purpose: remove local artifacts: .terraform, .terraform.lock.hcl, plan files
-
-- help
-  - Purpose: prints available Make targets and usage.
+- `validate`, `fmt`, `lint`, `docs`, `clean`, `help` — helper/quality targets (run `pre-commit`, `terraform fmt`, `terraform validate`, and generate module docs).
 
 ---
 
-## ⚠️ Why delete Kubernetes resources (and ENIs) before terraform destroy?
+## ⚠️ Why delete Kubernetes resources (and ENIs) before `terraform destroy`
 
-Common failure: terraform destroy fails because AWS reports resources are in use (ENIs attached, load balancers/target groups referenced).
+Terraform destroy can fail with "resource in use" when cloud resources (ENIs, target groups, PVC mounts) are still attached by Kubernetes controllers or pods.
 
 Why:
-- Kubernetes (and Kubernetes controllers such as the AWS Load Balancer Controller) create AWS resources (ENIs, target groups, security group rules) dynamically. If Terraform tries to destroy underlying networking resources (subnets, VPC, security groups) while those dynamically created resources still exist and are attached, AWS blocks the deletion with "resource in use" errors.
-- Fargate pods attach ENIs to provide pod networking. Those ENIs must be removed before deleting subnets or VPCs.
+- Kubernetes controllers (e.g., AWS Load Balancer Controller) create and manage AWS resources (target groups, listeners, NLB/ALB resources).
+- Fargate pods mount ENIs. EFS mounts (via PVCs) remain until pods unmount PVCs. AWS blocks deletion of VPC/subnets/SGs/resources while attachments exist.
 
-Recommended ordering:
+Recommended destroy ordering:
 1. Delete application Kubernetes resources (Services, Ingresses, Deployments) so controllers detach and remove cloud resources:
-   - kubectl delete -f k8s/service-hello-world.yaml
-   - kubectl delete -f k8s/deployment-hello-world.yaml
-   - kubectl -n kube-system delete deploy aws-load-balancer-controller (if you installed it manually)
-2. Wait until all pods and ENIs are gone. Verify:
-   - kubectl get pods -A
-   - Check EC2 console -> Network Interfaces: look for ENIs associated with your cluster and ensure none remain in-use.
-3. Run make destroy ENV=dev
-4. If terraform still errors, find blocking resources with terraform state list or AWS console and remove them manually:
-   - terraform state rm <resource_address>   # removes from state (use with caution)
-   - then terraform destroy -auto-approve
+```bash
+kubectl delete -f k8s/service-hello-world.yaml
+kubectl delete -f k8s/deployment-hello-world.yaml
+# remove load balancer controller if required:
+kubectl -n kube-system delete deploy aws-load-balancer-controller
+```
+2. Remove Grafana so PVCs unmount:
+```bash
+kubectl -n monitoring delete deploy grafana
+helm -n monitoring uninstall grafana  # if installed by Helm
+```
+3. Wait for pods, PVCs, and ENIs to be removed:
+```bash
+kubectl get pods -A
+kubectl get pvc -n monitoring
+# In AWS console: EC2 -> Network Interfaces; ELB -> Target Groups
+```
+4. Run `make destroy ENV=dev`. If Terraform still errors:
+```bash
+terraform state list
+# investigate blocking resource addresses
+terraform state rm <address> # last resort
+terraform destroy -auto-approve
+```
 
-This repository’s Makefile does not automatically delete Kubernetes resources because that action requires kubeconfig + proper permissions and is destructive. You should manually remove K8s resources before calling make destroy to avoid stuck resource-in-use errors.
+Notes:
+- The Makefile does not automatically delete K8s resources because that requires kubeconfig and is destructive. Manual deletion gives you control and prevents accidental data loss.
 
 ---
 
@@ -221,13 +248,13 @@ git clone https://github.com/its-d/terraform-aws-eks-microservice-framework.git
 cd terraform-aws-eks-microservice-framework
 ```
 
-2. Prepare backend.hcl (local, never commit). Example shown above.
+2. Create `backend.hcl` locally (example above), do NOT commit it.
 
 3. Create environment tfvars:
 ```bash
 mkdir -p env/dev
 cp terraform.tfvars.example env/dev/terraform.tfvars
-# Edit env/dev/terraform.tfvars and populate required fields
+# Edit env/dev/terraform.tfvars and populate required fields (see section above)
 ```
 
 4. Initialize Terraform:
@@ -250,7 +277,8 @@ make apply ENV=dev
 7. Configure kubectl:
 ```bash
 aws eks update-kubeconfig --name <cluster_name_from_outputs> --region <region>
-# cluster_name is output from Terraform (check `terraform output` or output.tf)
+# Use terraform output to find cluster name if needed
+terraform output -json | jq .
 ```
 
 8. Deploy sample app:
@@ -260,21 +288,28 @@ kubectl apply -f k8s/service-hello-world.yaml
 kubectl get svc -w hello-world
 ```
 
+9. Grafana access:
+- After apply, get Grafana service/endpoint via `kubectl get svc -n monitoring` or from Terraform outputs. Grafana is backed by the EFS created by Terraform (when enabled), so dashboards persist across pod restarts.
+
 ---
 
 ## 🔁 CI and pre-commit
 
-- Run pre-commit checks locally before pushing:
+- Install pre-commit and run locally:
 ```bash
+pre-commit install
 pre-commit run --all-files
 ```
-- Makefile lint target also runs pre-commit.
+- CI should run `terraform fmt`, `terraform validate`, and pre-commit checks.
 
 ---
 
 ## 📚 Documentation
 
-See the docs/ directory for architecture, contributing, and troubleshooting guides (updated versions are included in this commit).
+Expanded docs live in `docs/`:
+- `docs/architecture.md` — architecture overview and data flow
+- `docs/contributing.md` — contribution and testing workflow
+- `docs/troubleshooting.md` — extended troubleshooting (EFS, ENIs, locks, etc.)
 
 ---
 

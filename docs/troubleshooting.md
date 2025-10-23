@@ -1,4 +1,4 @@
-# 🩺 Troubleshooting
+# 🩺 Troubleshooting (Updated)
 
 Common issues with steps to diagnose and resolve.
 
@@ -47,18 +47,53 @@ Fix:
 
 ---
 
-## Clean Destroy / Resource-in-use Errors (ENIs, Target Groups)
+## Grafana / EFS Related Issues
+
+Symptoms
+- Grafana Pod cannot start or crashes with mount errors.
+- Grafana deployment starts but dashboards are not persisted after restart.
+- EFS mount shows permission denied.
+
+Checks & Fixes
+1. Verify EFS Access Point & File System
+   - Confirm `efs_file_system_id` and `efs_access_point_id` in env tfvars.
+   - Confirm Access Point exists and is correctly configured to use UID/GID expected by Grafana.
+
+2. Check Security Groups and Mount Targets
+   - Ensure EFS mount targets exist in the same subnets/AZs used by the cluster.
+   - Security group for EFS must allow inbound TCP 2049 from the cluster ENIs/SGs.
+   - Troubleshoot NFS connectivity from a pod (use a debug pod with nfs-utils if allowed).
+
+3. Permissions & POSIX User Mapping
+   - If using Access Points, ensure the posixUser is correctly set (Uid/Gid) for Grafana process.
+   - Inspect pod logs for permission errors and adjust Access Point creation settings.
+
+4. PVC / PV Binding
+   - Check PersistentVolume and PersistentVolumeClaim:
+```bash
+kubectl get pv,pvc -n monitoring
+kubectl describe pvc <pvc-name> -n monitoring
+```
+   - Ensure PV has the correct `volumeHandle` (EFS ID) and access point settings.
+
+5. Grafana Data Persistence
+   - If Grafana starts but dashboards disappear after pod restart, confirm the mount is writable and Grafana is writing to the mounted path (`/var/lib/grafana` or chart-specific path).
+
+---
+
+## Clean Destroy / Resource-in-use Errors (ENIs, Target Groups, EFS mounts)
 
 Cause:
-- K8s controllers or pods left AWS resources attached (ENIs, target groups). Terraform cannot delete VPCs/subnets/security groups with attached resources.
+- K8s controllers or pods left AWS resources attached (ENIs, target groups, EFS mounts). Terraform cannot delete VPCs/subnets/security groups with attached resources.
 
 Recommended Steps:
 1. Delete Kubernetes resources:
 ```bash
 kubectl delete -f k8s/service-hello-world.yaml
 kubectl delete -f k8s/deployment-hello-world.yaml
-# If using helm-managed apps:
-helm uninstall aws-load-balancer-controller -n kube-system
+# If Grafana is installed:
+kubectl -n monitoring delete deploy grafana
+helm -n monitoring uninstall grafana  # if installed via helm
 ```
 2. Wait for pods and ENIs to be removed. Verify:
 
@@ -69,6 +104,7 @@ kubectl get pods -A
 
 - AWS:
   - EC2 Console -> Network Interfaces (Search for cluster name tags)
+  - EFS Console -> Mount targets (ensure no active mounts - note: EFS won't list mounts the same way; verify Pods are gone)
   - ELB Console -> Target Groups -> Targets (ensure none remain healthy/attached)
 
 3. If Terraform still errors, use:

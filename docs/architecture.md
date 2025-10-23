@@ -1,7 +1,3 @@
-# 🏗️ Architecture Overview
-
-This document explains the architecture implemented by the terraform-aws-eks-microservice-framework and maps the Terraform modules to the runtime components.
-
 ---
 
 ## Core Components & Responsibilities
@@ -18,7 +14,7 @@ This document explains the architecture implemented by the terraform-aws-eks-mic
 
 3. IAM / IRSA Modules
    - Create IAM roles and policies needed by the cluster.
-   - Configure IRSA (IAM Roles for Service Accounts) for controllers such as the AWS Load Balancer Controller, Grafana, etc.
+   - Configure IRSA (IAM Roles for Service Accounts) for controllers such as the AWS Load Balancer Controller and Grafana.
    - Keeps permissions scoped to the minimum needed.
 
 4. Security Module
@@ -33,9 +29,11 @@ This document explains the architecture implemented by the terraform-aws-eks-mic
    - Example `hello-world` manifests show how services will be exposed via an NLB.
    - App module templates and outputs are designed so teams can plug in their own images and services.
 
-7. Monitoring / Grafana
-   - Optional Grafana deployment (variables exposed in modules/grafana).
-   - Admin credentials are provided via tfvars (sensitive).
+7. Monitoring: Grafana backed by EFS (Ready-to-use)
+   - Grafana is deployed as part of the stack and can be backed by an EFS file system and access point.
+   - EFS provides persistent storage for Grafana configuration, dashboards, plugins, and data that must survive pod restarts and cluster reprovisioning.
+   - Integration is done via a Kubernetes PersistentVolumeClaim that mounts an EFS-backed PersistentVolume — the module expects `efs_file_system_id` and `efs_access_point_id` tfvars if you want to enable this.
+   - Security: EFS mount targets must be reachable from cluster networking and SG rules must allow NFS (TCP/2049) traffic.
 
 ---
 
@@ -45,6 +43,7 @@ Internet -> NLB (or ALB) -> Security Group -> Fargate Pod -> EKS Control Plane -
 
 - The AWS Load Balancer Controller observes Services/Ingress in Kubernetes and creates the corresponding AWS load balancer resources (target groups, listeners).
 - Fargate pods use ENIs for networking; these ENIs live in your VPC and can prevent deletion of VPC/subnet resources if not removed first.
+- Grafana connects to EFS via mount targets in the VPC; the mount occurs from pods so EFS must be in the same VPC or peered network.
 
 ---
 
@@ -53,6 +52,7 @@ Internet -> NLB (or ALB) -> Security Group -> Fargate Pod -> EKS Control Plane -
 - IRSA for least-privilege pod permissions.
 - Separate environments via `env/<env>/terraform.tfvars`.
 - Remote state via S3 and DynamoDB (locking) to prevent concurrent modifications.
+- EFS with Access Points to isolate Grafana data and use POSIX user mapping for secure mounts.
 
 ---
 
