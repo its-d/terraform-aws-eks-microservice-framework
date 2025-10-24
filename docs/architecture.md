@@ -1,3 +1,5 @@
+# Architecture/System Configuration
+
 ---
 
 ## Core Components & Responsibilities

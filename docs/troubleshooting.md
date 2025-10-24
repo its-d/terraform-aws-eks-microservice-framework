@@ -1,4 +1,4 @@
-# 🩺 Troubleshooting (Updated)
+# 🩺 Troubleshooting
 
 Common issues with steps to diagnose and resolve.
 

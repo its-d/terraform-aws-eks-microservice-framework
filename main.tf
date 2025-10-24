@@ -59,7 +59,6 @@ provider "kubernetes" {
   token                  = data.aws_eks_cluster_auth.this.token
 }
 
-# Helm provider reuses the same EKS connection
 provider "helm" {
   kubernetes {
     host                   = data.aws_eks_cluster.this.endpoint

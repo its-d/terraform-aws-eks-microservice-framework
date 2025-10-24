@@ -1,15 +1,35 @@
 # Copyright 2025 Darian Lee
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
-# ...
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-# Namespace for Grafana (matches your Fargate selector)
+# -------------------------
+# Resource: Kubernetes Namespace
+# Description: Creates a Kubernetes namespace for monitoring resources.
+# Variables:
+# - efs_file_system_id
+# - efs_access_point_id
+# -------------------------
 resource "kubernetes_namespace" "monitoring" {
   metadata { name = "monitoring" }
 }
 
-# ---- Static EFS volume for Fargate (CSI, using FS::AP handle) ----
-# NOTE: On Fargate, do NOT use volume_attributes. The handle must be "<fs-id>::<ap-id>"
+# -------------------------
+# Resource: Kubernetes Persistent Volume for Grafana
+# Description: Creates a Persistent Volume on EFS for Grafana data storage.
+# Variables:
+# - efs_file_system_id
+# - efs_access_point_id
+# -------------------------
 resource "kubernetes_persistent_volume" "grafana_pv" {
   metadata { name = "${var.identifier}-grafana-pv" }
 
@@ -30,6 +50,12 @@ resource "kubernetes_persistent_volume" "grafana_pv" {
   }
 }
 
+# -------------------------
+# Resource: Kubernetes Persistent Volume Claim for Grafana
+# Description: Claims the Persistent Volume for Grafana usage.
+# Variables:
+# - identifier
+# -------------------------
 resource "kubernetes_persistent_volume_claim" "grafana_pvc" {
   metadata {
     name      = "${var.identifier}-grafana-pvc"
@@ -44,19 +70,26 @@ resource "kubernetes_persistent_volume_claim" "grafana_pvc" {
   }
 }
 
-# ---- Grafana via Helm ----
+# -------------------------
+# Resource: Helm Release for Grafana
+# Description: Deploys Grafana using the official Helm chart with EFS persistence and ALB ingress.
+# Variables:
+# - grafana_admin_user
+# - grafana_admin_password
+# - region
+# -------------------------
+
 resource "helm_release" "grafana" {
   name            = "grafana"
   namespace       = kubernetes_namespace.monitoring.metadata[0].name
   repository      = "https://grafana.github.io/helm-charts"
   chart           = "grafana"
-  version         = "8.5.12" # pin for reproducibility
+  version         = "8.5.12"
   wait            = true
   timeout         = 900
   atomic          = true
   cleanup_on_fail = true
 
-  # --- Persistence ON: bind to our existing PVC on EFS ---
   set {
     name  = "persistence.enabled"
     value = "true"
@@ -66,10 +99,6 @@ resource "helm_release" "grafana" {
     value = kubernetes_persistent_volume_claim.grafana_pvc.metadata[0].name
   }
 
-  # The official Grafana image runs as UID/GID 472 by default, which matches your EFS AP.
-  # No need to change runAsUser/fsGroup here.
-
-  # --- Probes (give Grafana a moment to boot) ---
   set {
     name  = "readinessProbe.enabled"
     value = "true"
@@ -96,7 +125,6 @@ resource "helm_release" "grafana" {
     value = "10"
   }
 
-  # --- Service (use ClusterIP; ALB will target pod IPs) ---
   set {
     name  = "service.type"
     value = "ClusterIP"
@@ -110,7 +138,6 @@ resource "helm_release" "grafana" {
     value = "3000"
   }
 
-  # --- Admin auth (move to secret later if you want) ---
   set {
     name  = "adminUser"
     value = var.grafana_admin_user
@@ -120,7 +147,6 @@ resource "helm_release" "grafana" {
     value = var.grafana_admin_password
   }
 
-  # --- IRSA: let Grafana read CloudWatch later without static creds ---
   set {
     name  = "serviceAccount.create"
     value = "true"
@@ -134,7 +160,6 @@ resource "helm_release" "grafana" {
     value = var.region
   }
 
-  # --- ALB Ingress (no host -> wildcard *) ---
   set {
     name  = "ingress.enabled"
     value = "true"
@@ -143,7 +168,6 @@ resource "helm_release" "grafana" {
     name  = "ingress.ingressClassName"
     value = "alb"
   }
-  # Keep legacy annotation too (some setups still read it)
   set {
     name  = "ingress.annotations.kubernetes\\.io/ingress\\.class"
     value = "alb"
@@ -173,7 +197,6 @@ resource "helm_release" "grafana" {
     value = "Prefix"
   }
 
-  # Make sure the PV/PVC exist before Helm tries to mount
   depends_on = [
     kubernetes_namespace.monitoring,
     kubernetes_persistent_volume.grafana_pv,
@@ -181,6 +204,11 @@ resource "helm_release" "grafana" {
   ]
 }
 
+# -------------------------
+# Resource: Null Resource to Strip Bad ALB Tags
+# Description: Removes invalid tags from the ALB created by the Grafana Helm chart.
+# Variables: None
+# -------------------------
 resource "null_resource" "strip_bad_alb_tags" {
   triggers = {
     rel = helm_release.grafana.version
