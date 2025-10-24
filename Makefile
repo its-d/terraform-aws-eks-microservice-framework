@@ -11,20 +11,21 @@ GREEN  := \033[0;32m
 YELLOW := \033[1;33m
 RESET  := \033[0m
 
-# Guards
+# Stops command (plan/apply/destroy) if tfvars/backend files are missing
 _guard_tfvars:
 	@if [ ! -f "$(TFVARS)" ]; then \
 		echo "$(YELLOW)Missing $(TFVARS). Create it or set ENV=<env>$(RESET)"; \
 		exit 1; \
 	fi
 
+# Stops init if backend file is missing
 _guard_backend:
 	@if [ ! -f "$(BACKEND)" ]; then \
 		echo "$(YELLOW)Missing $(BACKEND). Create it (S3/Dynamo backend config) or set ENV=<env>$(RESET)"; \
 		exit 1; \
 	fi
 
-# --- Hard nuke of local K8s bits used by Grafana (best-effort) ---
+# Updates destroy process to forcibly clean up K8s/Helm resources first
 _force_k8s_purge:
 	@echo "$(YELLOW)🧨 Forcing local K8s cleanup (Grafana ns/PV/etc)$(RESET)"
 	-@aws eks update-kubeconfig --name "$$(terraform output -raw cluster_name 2>/dev/null)" \
@@ -51,7 +52,7 @@ _force_k8s_purge:
 	-@kubectl delete namespace monitoring --ignore-not-found --wait=false >/dev/null 2>&1 || true
 	-@kubectl patch namespace monitoring --type=merge -p '{"spec":{"finalizers":[]}}' >/dev/null 2>&1 || true
 
-# --- Remove K8s/Helm resources from TF state so destroy doesn't hit the K8s provider ---
+# Removes K8s/Helm resources from Terraform state to avoid errors on destroy
 _state_rm_k8s:
 	@echo "$(YELLOW)🧺 Removing K8s/Helm resources from Terraform state$(RESET)"
 	-@$(TF) state rm module.grafana.helm_release.grafana >/dev/null 2>&1 || true
@@ -62,7 +63,7 @@ _state_rm_k8s:
 	# Fallback: strip any other lingering k8s/helm entries
 	-@$(TF) state list 2>/dev/null | egrep '^(helm_release|kubernetes_)' | xargs -r $(TF) state rm >/dev/null 2>&1 || true
 
-# --- Pre-clean AWS networking (ALBs first, then any ENIs in this VPC) ---
+# Cleans up leftover AWS network resources (ALBs/ENIs) before destroy
 _aws_net_purge:
 	@echo "$(YELLOW)🧼 Pre-cleaning ALBs & ENIs in this env$(RESET)"
 	# detect region and vpc (fallback-safe)
@@ -88,7 +89,8 @@ _aws_net_purge:
 	    aws ec2 delete-network-interface --region $$REGION --network-interface-id $$ENI >/dev/null 2>&1 || true; \
 	  done
 
-init: _guard_backend  ## Initialize Terraform in root and all module folders (skip hidden dirs)
+# Initializes Terraform with backend and all modules found in modules/ (Not including .* dirs)
+init: _guard_backend
 	@echo "$(YELLOW)🚀 Initializing Terraform (root) with backend $(BACKEND)$(RESET)"
 	@$(TF) init -upgrade -reconfigure -backend-config=$(BACKEND)
 	@echo "$(YELLOW)🔁 Initializing all modules...$(RESET)"
@@ -98,15 +100,17 @@ init: _guard_backend  ## Initialize Terraform in root and all module folders (sk
 	done
 	@echo "$(YELLOW)✅ All Terraform modules initialized$(RESET)"
 
-plan: _guard_tfvars ## terraform plan using env tfvars
+# Terraform plan using env tfvars and outputs to plan file
+plan: _guard_tfvars
 	@echo "$(YELLOW)🧠 Planning for $(ENV)$(RESET)"
 	$(TF) plan -var-file=$(TFVARS) -out=plan-$(ENV).tfplan
 
-apply: ## apply last plan file
+# Applies previously generated plan file
+apply:
 	@echo "$(GREEN)🚀 Applying plan for $(ENV)$(RESET)"
 	$(TF) apply "plan-$(ENV).tfplan"
 
-# --- Your destroy, now with the two steps above first ---
+# Destroy resources for the selected environment including above pre-cleanup steps
 destroy: _guard_tfvars
 	@echo "$(YELLOW)💣 Destroying $(ENV)$(RESET)"
 	$(MAKE) _aws_net_purge
@@ -114,26 +118,26 @@ destroy: _guard_tfvars
 	$(MAKE) _state_rm_k8s
 	@$(TF) destroy -var-file=$(TFVARS)
 
-validate: ## terraform validate (root)
+# Validates Terraform configuration syntax at root
+validate:
 	@echo "$(YELLOW)🔍 Validating$(RESET)"
 	$(TF) validate
-
-clean: ## remove local artifacts
-	@echo "$(YELLOW)🧽 Cleaning$(RESET)"
-	rm -rf .terraform .terraform.lock.hcl plan-*.tfplan
 
 # ==============================
 # Quality & Docs
 # ==============================
 
-fmt: ## format
+# Formats your Terraform files
+fmt:
 	@echo "$(YELLOW)🧹 Formatting$(RESET)"
 	$(TF) fmt -recursive
 
+# Runs pre-commit hooks against all files
 lint:
 	@echo "$(YELLOW)🔎 Running pre-commit hooks$(RESET)"
 	pre-commit run --all-files
 
+# Generates terraform-docs for all modules in modules/
 docs:
 	@echo "$(YELLOW)📘 Generating module documentation$(RESET)"
 	@for d in modules/*; do \
@@ -147,10 +151,12 @@ docs:
 # Utility
 # ==============================
 
+# Cleans up local Terraform files
 clean:
-	@echo "$(YELLOW)🧽 Cleaning up local files$(RESET)"
+	@echo "$(YELLOW)🧽 Cleaning$(RESET)"
 	rm -rf .terraform .terraform.lock.hcl plan-*.tfplan
 
+# Displays help information
 help:
 	@echo "$(GREEN)Available targets:$(RESET)"
 	@echo ""
