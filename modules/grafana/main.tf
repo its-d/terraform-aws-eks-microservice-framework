@@ -16,9 +16,7 @@
 -------------------------
 * Resource: Kubernetes Namespace
 * Description: Creates a Kubernetes namespace for monitoring resources.
-* Variables:
-  - efs_file_system_id
-  - efs_access_point_id
+* Variables: None
 -------------------------
 */
 resource "kubernetes_namespace" "monitoring" {

@@ -92,7 +92,6 @@ This repository includes a Grafana deployment wired to persistent storage manage
 
 Important behavioral note (DO NOT put EFS IDs in tfvars for the default workflow)
 - The repo's Grafana/EFS integration is implemented so that Terraform creates and manages the EFS resources (file system, access point, mount targets) when the feature is enabled. After `terraform apply`, Terraform will output the created EFS IDs.
-- You should **not** supply `efs_file_system_id` or `efs_access_point_id` in `env/<env>/terraform.tfvars` for the default workflow — those are produced by Terraform, not required as inputs.
 - If you intentionally want to reuse an existing EFS created outside this repo, that is an advanced/custom workflow. In that case you must modify the module input surface to accept external EFS IDs (this repo currently manages EFS by default).
 
 What is created (when enabled)

@@ -56,7 +56,6 @@ Symptoms
 
 Checks & Fixes
 1. Verify EFS Access Point & File System
-   - Confirm `efs_file_system_id` and `efs_access_point_id` in env tfvars.
    - Confirm Access Point exists and is correctly configured to use UID/GID expected by Grafana.
 
 2. Check Security Groups and Mount Targets
@@ -76,7 +75,7 @@ kubectl describe pvc <pvc-name> -n monitoring
 ```
    - Ensure PV has the correct `volumeHandle` (EFS ID) and access point settings.
 
-5. Grafana Data Persistence
+1. Grafana Data Persistence
    - If Grafana starts but dashboards disappear after pod restart, confirm the mount is writable and Grafana is writing to the mounted path (`/var/lib/grafana` or chart-specific path).
 
 ---

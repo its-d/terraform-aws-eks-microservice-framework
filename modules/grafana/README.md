@@ -33,8 +33,6 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_efs_access_point_id"></a> [efs\_access\_point\_id](#input\_efs\_access\_point\_id) | The ID of the EFS access point to be used by Grafana for storage. | `string` | n/a | yes |
-| <a name="input_efs_file_system_id"></a> [efs\_file\_system\_id](#input\_efs\_file\_system\_id) | The ID of the EFS file system to be used by Grafana for storage. | `string` | n/a | yes |
 | <a name="input_grafana_admin_password"></a> [grafana\_admin\_password](#input\_grafana\_admin\_password) | Grafana admin password | `string` | n/a | yes |
 | <a name="input_grafana_admin_user"></a> [grafana\_admin\_user](#input\_grafana\_admin\_user) | Grafana admin username | `string` | n/a | yes |
 | <a name="input_identifier"></a> [identifier](#input\_identifier) | A unique identifier for the resources. | `string` | n/a | yes |

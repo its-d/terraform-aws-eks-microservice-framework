@@ -30,7 +30,7 @@
 6. Monitoring: Grafana backed by EFS (Ready-to-use)
    - Grafana is deployed as part of the stack and can be backed by an EFS file system and access point.
    - EFS provides persistent storage for Grafana configuration, dashboards, plugins, and data that must survive pod restarts and cluster reprovisioning.
-   - Integration is done via a Kubernetes PersistentVolumeClaim that mounts an EFS-backed PersistentVolume — the module expects `efs_file_system_id` and `efs_access_point_id` tfvars if you want to enable this.
+   - Integration is done via a Kubernetes PersistentVolumeClaim that mounts an EFS-backed PersistentVolume
    - Security: EFS mount targets must be reachable from cluster networking and SG rules must allow NFS (TCP/2049) traffic.
 
 ---
