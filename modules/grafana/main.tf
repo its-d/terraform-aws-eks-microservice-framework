@@ -12,24 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# -------------------------
-# Resource: Kubernetes Namespace
-# Description: Creates a Kubernetes namespace for monitoring resources.
-# Variables:
-# - efs_file_system_id
-# - efs_access_point_id
-# -------------------------
+/*
+-------------------------
+* Resource: Kubernetes Namespace
+* Description: Creates a Kubernetes namespace for monitoring resources.
+* Variables:
+  - efs_file_system_id
+  - efs_access_point_id
+-------------------------
+*/
 resource "kubernetes_namespace" "monitoring" {
   metadata { name = "monitoring" }
 }
 
-# -------------------------
-# Resource: Kubernetes Persistent Volume for Grafana
-# Description: Creates a Persistent Volume on EFS for Grafana data storage.
-# Variables:
-# - efs_file_system_id
-# - efs_access_point_id
-# -------------------------
+/*
+-------------------------
+* Resource: Kubernetes Persistent Volume for Grafana
+* Description: Creates a Persistent Volume on EFS for Grafana data storage.
+* Variables:
+  - efs_file_system_id
+  - efs_access_point_id
+-------------------------
+*/
 resource "kubernetes_persistent_volume" "grafana_pv" {
   metadata { name = "${var.identifier}-grafana-pv" }
 
@@ -50,12 +54,14 @@ resource "kubernetes_persistent_volume" "grafana_pv" {
   }
 }
 
-# -------------------------
-# Resource: Kubernetes Persistent Volume Claim for Grafana
-# Description: Claims the Persistent Volume for Grafana usage.
-# Variables:
-# - identifier
-# -------------------------
+/*
+-------------------------
+* Resource: Kubernetes Persistent Volume Claim for Grafana
+* Description: Claims the Persistent Volume for Grafana usage.
+* Variables:
+  - identifier
+-------------------------
+*/
 resource "kubernetes_persistent_volume_claim" "grafana_pvc" {
   metadata {
     name      = "${var.identifier}-grafana-pvc"
@@ -70,15 +76,16 @@ resource "kubernetes_persistent_volume_claim" "grafana_pvc" {
   }
 }
 
-# -------------------------
-# Resource: Helm Release for Grafana
-# Description: Deploys Grafana using the official Helm chart with EFS persistence and ALB ingress.
-# Variables:
-# - grafana_admin_user
-# - grafana_admin_password
-# - region
-# -------------------------
-
+/*
+-------------------------
+* Resource: Helm Release for Grafana
+* Description: Deploys Grafana using the official Helm chart with EFS persistence and ALB ingress.
+* Variables:
+  - grafana_admin_user
+  - grafana_admin_password
+  - region
+-------------------------
+*/
 resource "helm_release" "grafana" {
   name            = "grafana"
   namespace       = kubernetes_namespace.monitoring.metadata[0].name
@@ -204,11 +211,13 @@ resource "helm_release" "grafana" {
   ]
 }
 
-# -------------------------
-# Resource: Null Resource to Strip Bad ALB Tags
-# Description: Removes invalid tags from the ALB created by the Grafana Helm chart.
-# Variables: None
-# -------------------------
+/*
+-------------------------
+* Resource: Null Resource to Strip Bad ALB Tags
+* Description: Removes invalid tags from the ALB created by the Grafana Helm chart.
+* Variables: None
+-------------------------
+*/
 resource "null_resource" "strip_bad_alb_tags" {
   triggers = {
     rel = helm_release.grafana.version

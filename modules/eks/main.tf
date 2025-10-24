@@ -12,17 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# -------------------------
-# Resource: EKS Cluster
-# Description: Creates an EKS cluster with specified configuration.
-# Variables required:
-# - identifier
-# - cluster_role_arn
-# - pod_execution_role_arn
-# - private_subnet_ids
-# - endpoint_private_access
-# - common_tags
-# -------------------------
+/*
+----------------------------
+* Resource: EKS Cluster
+* Description: Creates an EKS cluster with specified configuration.
+* Variables required:
+  - identifier
+  - cluster_role_arn
+  - pod_execution_role_arn
+  - private_subnet_ids
+  - endpoint_private_access
+  - common_tags
+----------------------------
+*/
 resource "aws_eks_cluster" "eks_cluster" {
   name     = "${var.identifier}-eks-cluster"
   role_arn = var.cluster_role_arn
@@ -38,15 +40,17 @@ resource "aws_eks_cluster" "eks_cluster" {
   tags = var.common_tags
 }
 
-# -------------------------
-# Resource: EKS Fargate Profile
-# Description: Creates an EKS Fargate profile to run pods in specified namespaces on Fargate.
-# Variables required:
-# - identifier
-# - pod_execution_role_arn
-# - private_subnet_ids
-# - common_tags
-# -------------------------
+/*
+----------------------------
+* Resource: EKS Fargate Profile
+* Description: Creates an EKS Fargate profile to run pods in specified namespaces on Fargate.
+* Variables required:
+  - identifier
+  - pod_execution_role_arn
+  - private_subnet_ids
+  - common_tags
+----------------------------
+*/
 resource "aws_eks_fargate_profile" "fargate_profile" {
   cluster_name           = aws_eks_cluster.eks_cluster.name
   fargate_profile_name   = "${var.identifier}-fargate-profile"
@@ -78,12 +82,14 @@ resource "aws_eks_fargate_profile" "fargate_profile" {
   tags = var.common_tags
 }
 
-# -------------------------
-# Resource: Patch CoreDNS Deployment for Fargate
-# Description: Patches the CoreDNS deployment to run on Fargate by adding the necessary nodeSelector and tolerations.
-# Variables required:
-# - region
-# -------------------------
+/*
+----------------------------
+* Resource: Patch CoreDNS Deployment for Fargate
+* Description: Patches the CoreDNS deployment to run on Fargate by adding the necessary nodeSelector and tolerations.
+* Variables required:
+  - region
+----------------------------
+*/
 resource "null_resource" "patch_coredns_fargate" {
   triggers = {
     cluster_endpoint = aws_eks_cluster.eks_cluster.endpoint

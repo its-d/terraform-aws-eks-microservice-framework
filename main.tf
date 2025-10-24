@@ -13,9 +13,11 @@
 # limitations under the License.
 
 
-# -------------------------
-# Terraform Settings
-# -------------------------
+/*
+-------------------------
+Terraform Settings
+-------------------------
+*/
 terraform {
   required_version = ">= 1.5.0"
 
@@ -37,9 +39,11 @@ terraform {
   backend "s3" {}
 }
 
-# -------------------------
-# Data Source helpers for EKS cluster access
-# -------------------------
+/*
+-------------------------
+Data Source helpers for EKS cluster access
+-------------------------
+*/
 data "aws_eks_cluster" "this" {
   name       = module.eks.cluster_name
   depends_on = [module.eks]
@@ -50,9 +54,11 @@ data "aws_eks_cluster_auth" "this" {
   depends_on = [module.eks]
 }
 
-# -------------------------
-# Providers
-# -------------------------
+/*
+-------------------------
+Providers
+-------------------------
+*/
 provider "kubernetes" {
   host                   = data.aws_eks_cluster.this.endpoint
   cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
@@ -71,9 +77,11 @@ provider "aws" {
   region = var.region
 }
 
-# -------------------------
-# Setting Resource Tag Variables
-# -------------------------
+/*
+-------------------------
+Setting Resource Tag Variables
+-------------------------
+*/
 locals {
   common_tags = {
     Identifier  = var.identifier
@@ -82,10 +90,13 @@ locals {
   }
 }
 
-# -------------------------
-# Module responsible for EKS configuration
-# and Fargate Profile setup
-# -------------------------
+/*
+-------------------------
+Module responsible for EKS configuration
+and Fargate Profile setup
+-------------------------
+*/
+
 module "eks" {
   source                  = "./modules/eks/"
   identifier              = var.identifier
@@ -100,19 +111,23 @@ module "eks" {
   depends_on              = [module.vpc]
 }
 
-# -------------------------
-# Module responsible for Cluster
-# and Pod execution role
-# -------------------------
+/*
+-------------------------
+Module responsible for Cluster
+and Pod execution role
+-------------------------
+*/
 module "iam" {
   source      = "./modules/iam"
   common_tags = local.common_tags
 }
 
-# -------------------------
-# Module responsible for IAM Roles
-# for Service Accounts (IRSA)
-# -------------------------
+/*
+-------------------------
+Module responsible for IAM Roles
+for Service Accounts (IRSA)
+-------------------------
+*/
 module "iam_irsa" {
   source          = "./modules/iam_irsa"
   common_tags     = local.common_tags
@@ -120,9 +135,11 @@ module "iam_irsa" {
   depends_on      = [module.eks]
 }
 
-# -------------------------
-# Module responsible for Security Groups
-# -------------------------
+/*
+-------------------------
+Module responsible for Security Groups
+-------------------------
+*/
 module "security" {
   source                    = "./modules/security"
   vpc_id                    = module.vpc.vpc_id
@@ -131,9 +148,11 @@ module "security" {
   depends_on                = [module.eks]
 }
 
-# -------------------------
-# Module responsible for Storage (EFS)
-# -------------------------
+/*
+-------------------------
+Module responsible for Storage (EFS)
+-------------------------
+*/
 module "storage" {
   source                = "./modules/storage"
   identifier            = var.identifier
@@ -142,9 +161,11 @@ module "storage" {
   common_tags           = local.common_tags
 }
 
-# -------------------------
-# Module responsible for Grafana deployment
-# -------------------------
+/*
+-------------------------
+Module responsible for Grafana deployment
+-------------------------
+*/
 module "grafana" {
   source                 = "./modules/grafana"
   identifier             = var.identifier
@@ -159,9 +180,11 @@ module "grafana" {
   ]
 }
 
-# -------------------------
-# Module responsible for VPC creation
-# -------------------------
+/*
+-------------------------
+Module responsible for VPC creation
+-------------------------
+*/
 module "vpc" {
   source      = "./modules/vpc"
   environment = var.environment
