@@ -12,6 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+/*
+-------------------------
+* Module: VPC
+* Description: Creates a VPC with public and private subnets across two AZs.
+* Variables required:
+  - identifier
+  - environment
+  - common_tags
+-------------------------
+*/
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "~> 6.4"

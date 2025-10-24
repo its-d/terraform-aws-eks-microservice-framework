@@ -12,7 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+/*
+-------------------------
+* Resource: EFS File System
+* Description: Creates an EFS file system for Grafana storage.
+* Variables:
+  - identifier
+  - common_tags
+-------------------------
+*/
 resource "aws_efs_file_system" "efs" {
   creation_token = "${var.identifier}-efs"
 
@@ -26,6 +34,15 @@ resource "aws_efs_file_system" "efs" {
   tags = var.common_tags
 }
 
+/*
+-------------------------
+* Resource: EFS Mount Targets
+* Description: Creates EFS mount targets in specified private subnets.
+* Variables:
+  - private_subnet_ids
+  - efs_security_group_id
+-------------------------
+*/
 resource "aws_efs_mount_target" "efs_mount" {
   for_each = zipmap(tolist(range(length(var.private_subnet_ids))), var.private_subnet_ids)
 
@@ -34,6 +51,14 @@ resource "aws_efs_mount_target" "efs_mount" {
   security_groups = [var.efs_security_group_id]
 }
 
+/*
+-------------------------
+* Resource: EFS Access Point
+* Description: Creates an EFS access point for Grafana data storage.
+* Variables:
+  - common_tags
+-------------------------
+*/
 resource "aws_efs_access_point" "efs_access_point" {
   file_system_id = aws_efs_file_system.efs.id
 
