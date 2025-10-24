@@ -79,7 +79,7 @@ Windows
 - `backend.tf` — remote state backend config placeholder
 - `alb_controller.tf` — AWS Load Balancer Controller Helm configuration
 - `Makefile` — convenience workflow targets (init, plan, apply, destroy, etc.)
-- `modules/*` — VPC, EKS, IAM, Grafana, app, etc.
+- `modules/*` — VPC, EKS, IAM, Grafana, etc.
 - `env/<env>/terraform.tfvars` — environment-specific variables (create these)
 - `k8s/*` — sample Kubernetes manifests
 - `docs/*` — architecture, contributing, troubleshooting
