@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Root-level outputs to make nested module values easy to grab
-
 output "cluster_name" {
   description = "EKS cluster name"
   value       = module.eks.cluster_name
@@ -44,7 +42,6 @@ output "alb_sg_id" {
   value       = module.security.alb_sg_id
 }
 
-# Optional but handy
 output "vpc_id" {
   description = "VPC ID"
   value       = module.vpc.vpc_id
