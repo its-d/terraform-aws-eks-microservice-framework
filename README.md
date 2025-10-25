@@ -12,9 +12,24 @@ A modular, production-ready Terraform framework for deploying Amazon EKS and run
 
 ---
 
+## Quick first-time checklist (do these before running apply)
+1. Create remote state artifacts (S3 bucket + DynamoDB table) or have a backend.hcl ready:
+   - S3 bucket (private) for Terraform state
+   - DynamoDB table with partition key "LockID" for state locking (recommended)
+2. Copy example tfvars and populate required fields:
+   - `cp terraform.tfvars.example env/dev/terraform.tfvars`
+   - Edit `env/dev/terraform.tfvars` (see "env tfvars" below)
+3. Ensure you have the minimum toolchain installed (Terraform, AWS CLI, kubectl, Helm, Python + pre-commit).
+4. Run: `make init ENV=dev` (or `terraform init -backend-config=backend.hcl`) and ensure init succeeds.
+5. Run: `make plan ENV=dev` then `make apply ENV=dev`.
+
+Tip: Use a feature branch and open a PR so CI validates formatting and terraform validation before merging to main.
+
+---
+
 ## ⚙️ Prerequisites (fresh machine)
 
-Minimum recommended (tested): Terraform >= 1.6, AWS CLI v2, Helm >= 3.8, kubectl matching EKS control plane, Python >= 3.10.
+Minimum recommended (tested): Terraform >= 1.6 (CI pins 1.9.x — see CI workflow), AWS CLI v2, Helm >= 3.8, kubectl matching EKS control plane, Python >= 3.10.
 
 Recommended packages (install on a fresh machine):
 
@@ -66,8 +81,10 @@ Windows
 
 - Configure credentials:
   - `aws configure --profile <profile>` or set environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, AWS_DEFAULT_REGION.
-- Required permissions:
+- Required permissions (high-level):
   - Create IAM roles/policies, EKS clusters, VPC resources, EC2 ENIs, ELB/ALB resources, EFS resources (if Terraform will create them), S3/DynamoDB for state.
+
+Security note: Do not put secrets in git. See "Secrets & Sensitive Values" below for recommended patterns.
 
 ---
 
@@ -79,69 +96,65 @@ Windows
 - `backend.tf` — remote state backend config placeholder
 - `alb_controller.tf` — AWS Load Balancer Controller Helm configuration
 - `Makefile` — convenience workflow targets (init, plan, apply, destroy, etc.)
-- `modules/*` — VPC, EKS, IAM, Grafana, etc.
+- `modules/*` — VPC, EKS, IAM, storage, Grafana, app, etc.
 - `env/<env>/terraform.tfvars` — environment-specific variables (create these)
 - `k8s/*` — sample Kubernetes manifests
 - `docs/*` — architecture, contributing, troubleshooting
+- `.github/workflows/ci.yml` — CI pipeline (pre-commit, terraform validate, plan artifacts)
 
 ---
 
 ## 📌 Grafana (ready-to-use) with EFS — primary feature
 
-This repository includes a Grafana deployment wired to persistent storage managed by Amazon EFS.
+This repository includes a Grafana deployment wired to persistent storage managed by the storage module (EFS) and exposed to Grafana via PersistentVolume/PersistentVolumeClaim.
 
-Important behavioral note (DO NOT put EFS IDs in tfvars for the default workflow)
-- The repo's Grafana/EFS integration is implemented so that Terraform creates and manages the EFS resources (file system, access point, mount targets) when the feature is enabled. After `terraform apply`, Terraform will output the created EFS IDs.
-- If you intentionally want to reuse an existing EFS created outside this repo, that is an advanced/custom workflow. In that case you must modify the module input surface to accept external EFS IDs (this repo currently manages EFS by default).
+Important behavioral note (default flow)
+- The `modules/storage` module creates the EFS file system, mount targets, and access point when deployed. The root `main.tf` instantiates `module.storage` and passes its outputs to `module.grafana`.
+- Do NOT set `efs_file_system_id` or `efs_access_point_id` in `env/<env>/terraform.tfvars` for the default workflow — these IDs are produced by Terraform and exposed as module outputs.
+- If you intentionally want to reuse an external EFS created outside this repo, that is an advanced workflow: you must update module usage or supply optional variables to accept external IDs. (The current default wiring uses `module.storage` to create EFS.)
 
-What is created (when enabled)
-- aws_efs_file_system
-- aws_efs_access_point
-- mount targets in required subnets
-- security group rules to allow NFS (TCP/2049) from the cluster ENIs
+What is created (when storage is enabled)
+- `aws_efs_file_system`
+- `aws_efs_access_point`
+- `aws_efs_mount_target` in required subnets
+- security group(s) to allow NFS (TCP/2049) from the cluster ENIs
 
-How to confirm
+How to confirm (after apply)
 ```bash
-# after make apply / terraform apply
-terraform state list | grep -i efs || true
 terraform output efs_file_system_id
 terraform output efs_access_point_id
 terraform output -json | jq .
+# or inspect state
+terraform state list | grep -i efs || true
 ```
 
-Security considerations
-- EFS mount security groups must allow NFS (TCP/2049) from the cluster's ENIs or worker nodes.
-- The module typically configures mount targets and SG rules for you when it creates EFS.
+Grafana access
+- After apply, retrieve the Grafana service/endpoint:
+  - `kubectl get svc -n monitoring` (service type depends on helm values; often ClusterIP with an ingress or LoadBalancer via AWS Load Balancer Controller)
+  - Or inspect Terraform outputs (if the grafana module exposes an output for the URL)
 
 ---
 
-## 🔧 Backend (backend.hcl) — example & required fields
+## 🔧 First-time backend / bootstrap (recommended)
 
-We use a remote S3 backend with optional DynamoDB locking. Create a local `backend.hcl` (do not commit) and supply it when running `terraform init`.
+You can create the backend resources manually or with a small helper. Example Terraform snippet to create a state S3 bucket & DynamoDB table (run in a separate one-off bootstrap workspace) is provided in `scripts/bootstrap-backend.example.tf` (suggestion). If you prefer commands, create the S3 bucket and DynamoDB table via AWS console / CLI.
 
-Example backend.hcl:
+Example backend.hcl (local file; do NOT commit):
 ```hcl
-bucket         = "terraform-state-bucket"
-key            = "PATH/ENV/terraform.tfstate" # use per-environment path
+bucket         = "my-terraform-state-bucket"
+key            = "terraform-aws-eks-microservice-framework/ENV/terraform.tfstate"
 region         = "us-east-1"
 encrypt        = true
-dynamodb_table = "terraform-state-lock"  # optional but recommended
+dynamodb_table = "my-terraform-state-locks"
 acl            = "private"
 role_arn       = "arn:aws:iam::123456789012:role/CI-Terraform-Role" # optional
 ```
 
-Fields to populate:
-- `bucket` — existing S3 bucket you control
-- `key` — state file path; include ENV to separate environments
-- `region` — S3 bucket region
-- `encrypt` — true recommended
-- `dynamodb_table` — for state locking (create table with PartitionKey "LockID")
-- `role_arn` — optional IAM role to assume for Terraform runs
-
 Usage:
 ```bash
 terraform init -backend-config=backend.hcl
-# or use Makefile: make init ENV=dev
+# or
+make init ENV=dev
 ```
 
 ---
@@ -162,7 +175,7 @@ Minimum fields (from terraform.tfvars.example and module variables):
 - `grafana_admin_password` — Grafana admin password (sensitive)
 
 Note about EFS:
-- Do NOT set `efs_file_system_id` or `efs_access_point_id` in `env` tfvars for the default behavior; Terraform creates and manages those resources. If you intentionally want to override with an external EFS, you must modify the module to accept external IDs (advanced workflow).
+- Do NOT set `efs_file_system_id` or `efs_access_point_id` in `env` tfvars for the default behavior. The storage module creates EFS and the root module wires its outputs into grafana. If you intend to reuse an externally-managed EFS, you must explicitly configure that advanced flow.
 
 Other possible inputs you may need depending on your usage:
 - `private_subnet_ids` — if using existing subnets
@@ -171,6 +184,11 @@ Other possible inputs you may need depending on your usage:
 
 Security:
 - Never commit real credentials. Add `env/*` to `.gitignore` to avoid accidental commits.
+
+Secrets & recommended pattern
+- For production / public usage, store sensitive values (Grafana admin password, etc.) in SSM Parameter Store or Secrets Manager and reference them in Terraform (or inject them via CI secrets). Example pattern:
+  - Put secret into SSM: `aws ssm put-parameter --name "/project/dev/grafana_admin_password" --type "SecureString" --value "<SECRET>"`
+  - Refer to SSM via Terraform data source `aws_ssm_parameter` with `with_decryption = true`.
 
 ---
 
@@ -196,6 +214,15 @@ High-level targets (see Makefile for exact behavior):
   - IMPORTANT: follow the resource removal ordering below to avoid "resource in use" errors.
 
 - `validate`, `fmt`, `lint`, `docs`, `clean`, `help` — helper/quality targets (run `pre-commit`, `terraform fmt`, `terraform validate`, and generate module docs).
+
+Recommended additions (suggested changes you can add to the Makefile)
+- `make outputs` — convenience target to show key outputs:
+```makefile
+outputs:
+	@echo "Cluster name: $$(terraform output -raw cluster_name 2>/dev/null || echo '<not set>')"
+	@echo "Grafana EFS FS ID: $$(terraform output -raw efs_file_system_id 2>/dev/null || echo '<not set>')"
+	@echo "Grafana EFS AP ID: $$(terraform output -raw efs_access_point_id 2>/dev/null || echo '<not set>')"
+```
 
 ---
 
@@ -273,173 +300,35 @@ make plan ENV=dev
 make apply ENV=dev
 ```
 
-7. Grafana access:
-- After apply, get Grafana service/endpoint via `kubectl get svc -n monitoring` or from Terraform outputs. Grafana is backed by the EFS created by Terraform (when enabled), so dashboards persist across pod restarts.
-
----
-
-## Pre-commit & CI: what each step does, why it’s there, and how it works
-
-Below are concise, copy/paste-ready explanations you can insert into your README describing the repository’s `.pre-commit-config.yaml` and `.github/workflows/ci.yml`. Each section lists the steps, what they do, and how they operate — plus the local commands you can run to mirror CI behavior.
-
----
-
-### .pre-commit-config.yaml — purpose and hooks explained
-
-Purpose: enforce consistent formatting, linting, and basic safety checks locally (before commits). This reduces CI failures and keeps the repo clean.
-
-Key hooks configured and what they do
-- General file hygiene (pre-commit hooks)
-  - trailing-whitespace — removes any trailing whitespace from files.
-  - end-of-file-fixer — ensures files end with a newline.
-  - check-yaml — validates YAML syntax.
-  - check-json — validates JSON syntax.
-  - check-added-large-files — prevents accidentally staging very large files.
-  - check-merge-conflict — detects unresolved merge conflict markers.
-
-- Terraform helpers (pre-commit-terraform)
-  - terraform_fmt — runs `terraform fmt -recursive` to format HCL.
-  - terraform_validate — runs `terraform validate` to catch grammar/validation errors.
-  - terraform_tflint — runs tflint for policy and best-practice checks.
-  - terraform_docs — generates module docs (used by the Makefile/docs target).
-
-- Python formatting & linting
-  - black — formats Python files to a consistent style.
-  - flake8 (+ plugins) — lints Python code; configured with recommended plugins and a 100-char max line length.
-
-- YAML linting
-  - yamllint — lints YAML and enforces configured rules (line-length disabled in config).
-
-- Local/system hooks (repo: local)
-  - kubeconform (system) — validates Kubernetes manifests in `k8s/*.yaml` against a specified Kubernetes version (strict validation).
-  - add-apache-headers (addlicense) — enforces/updates Apache-2.0 license header on code files (tf, tfvars, yaml, py, sh).
-
-How it works locally
-- Install pre-commit and any system tools referenced by local hooks:
-  - python -m pip install --upgrade pip
-  - pip install pre-commit
-  - Ensure system binaries used by local hooks are present (e.g., kubeconform, addlicense).
-- Install the git hooks once in your repo:
-  - pre-commit install
-- Run all configured hooks against the whole repository (same as CI does):
-  - pre-commit run --all-files
-
-Notes / tips
-- Some hooks call system binaries (kubeconform, addlicense). CI installs those into a `.bin` directory and adds it to PATH; replicate locally by installing the same tools (brew / apt / release downloads).
-- Use `PCT_TFPATH` or configure your PATH if Terraform is not the default binary name in your environment (CI uses env var `PCT_TFPATH=terraform` when running pre-commit).
-
----
-
-### .github/workflows/ci.yml — jobs, steps, and rationale
-
-Purpose: run repository quality checks, Terraform validation, and plan generation on pushes and pull requests. The workflow is split into logical jobs so linting runs first and blocks invalid code from proceeding to Terraform validation/plan steps.
-
-Top-level triggers and scope
-- Runs on `push` and `pull_request` events limited to Terraform files, tfvars, the pre-commit config, scripts, and workflow files. This reduces unnecessary runs for unrelated changes.
-
-Job: lint (Lint & Code Scan)
-- Checkout repository
-  - `actions/checkout` — fetches repo code so tools can scan files.
-- Setup Python
-  - `actions/setup-python` — ensures a reproducible Python runtime for pre-commit.
-- Setup Terraform
-  - `hashicorp/setup-terraform` — pins a Terraform CLI version for reproducible validation and `terraform fmt` behavior in CI.
-- Setup TFLint
-  - `terraform-linters/setup-tflint` — pins tflint to run policy/best-practice checks.
-- Cache pre-commit
-  - `actions/cache` caches pre-commit’s cache directory (`~/.cache/pre-commit`) keyed on `.pre-commit-config.yaml` so subsequent runs are faster.
-- Install CLI tools (terraform-docs, kubeconform, addlicense)
-  - CI downloads specific pinned releases (terraform-docs, kubeconform, addlicense) into a `.bin` folder and adds it to PATH so local-system hooks and doc generation can run. The script:
-    - Looks up GitHub release assets by tag.
-    - Downloads and extracts the linux/amd64 asset.
-    - Moves the executable into `.bin` and makes it executable.
-  - Rationale: local hooks reference binaries that are not Python packages; CI needs to provide those tools in PATH.
-- Install pre-commit
-  - `pip install pre-commit` so `pre-commit` is available in CI.
-- Run pre-commit hooks
-  - `pre-commit run --all-files` runs the full hook set (formatters, linters, kubeconform, addlicense). This enforces the same checks you run locally.
-
-How to reproduce the lint job locally
-1. Install the same pinned tools (terraform-docs, kubeconform, addlicense) or install equivalents to match CI versions.
-2. pip install pre-commit.
-3. Run: `pre-commit run --all-files`
-
-Job: tf-validate (Terraform validation per environment)
-- Depends on: lint (so only runs if pre-commit passed).
-- Uses matrix of environment directories (e.g., `env/dev`) — the CI job runs `terraform fmt -check -recursive` and `terraform validate` for each env directory.
-- Steps:
-  - checkout
-  - setup Terraform (same pinned CLI version)
-  - `terraform fmt -check -recursive` — ensures formatting is correct (fails CI if not).
-  - `terraform init -backend=false` (in the env directory) — initializes Terraform without remote backend so validation can run in CI without having access to state or secrets.
-  - `terraform validate` — validates the configuration in each env directory.
-
-Why init without backend?
-- Running init with `-backend=false` avoids requiring S3/DynamoDB credentials and avoids writing state during CI. It lets Terraform load providers and validate configuration safely in CI.
-
-How to run locally (per env)
+7. Configure kubectl:
 ```bash
-cd env/dev
-terraform init -backend=false
-terraform validate
+aws eks update-kubeconfig --name <cluster_name_from_outputs> --region <region>
+# Use terraform output to find cluster name:
+terraform output cluster_name
 ```
 
-Job: tf-plan (Terraform plan for PRs)
-- Runs only on pull requests and after `tf-validate`.
-- Purpose: generate a Terraform plan file for reviewers to inspect. Because CI cannot access your remote backend safely, it runs `terraform init -backend=false` and `terraform plan -out=tfplan.bin` with flags that disable state refresh/locking:
-  - `-input=false -refresh=false -lock=false`
-- After planning the job runs `terraform show -no-color tfplan.bin > tfplan.txt` and uploads the plan as an artifact so reviewers can download and inspect the proposed changes.
-
-Why plan with `-refresh=false -lock=false`?
-- Avoids requiring access to remote state/DynamoDB locks and keeps CI plan generation read-only and non-blocking. It produces a plan based solely on configuration and local tfvars in `env/<env>/` (if present).
-
-How to replicate the plan step locally (recommended only for dry-run / review)
+8. Deploy sample app:
 ```bash
-cd env/dev
-terraform init -backend=false
-terraform plan -input=false -refresh=false -lock=false -out=tfplan.bin
-terraform show -no-color tfplan.bin > tfplan.txt
+kubectl apply -f k8s/deployment-hello-world.yaml
+kubectl apply -f k8s/service-hello-world.yaml
+kubectl get svc -w hello-world
 ```
-Then inspect `tfplan.txt` or share it with reviewers.
 
-Artifacts and caching
-- CI uploads the generated plan (`tfplan.txt`) as an artifact for PR inspection.
-- The pre-commit cache speeds up subsequent pre-commit runs on the same runner image / workflow.
-
-Pinned versions and reproducibility
-- CI pins tools (Terraform, tflint, terraform-docs, kubeconform, addlicense) to specific tags. Update these pins in the workflow script when you want to upgrade the tools. The workflow includes placeholders to add SHA256 checks for extra security after an initial verification run.
-
-Secrets and tokens used
-- `GITHUB_TOKEN` is used to access GitHub API (when looking up releases) and is injected by GitHub Actions automatically for CI jobs.
-- CI does not require AWS credentials to run these validation steps because it initializes Terraform with `-backend=false` and avoids accessing remote state.
+9. Grafana access:
+- After apply, get Grafana service/endpoint via `kubectl get svc -n monitoring` or from Terraform outputs if the grafana module exposes them (recommended).
+- Grafana is backed by the EFS created by the storage module (when enabled), so dashboards persist across pod restarts.
 
 ---
 
-## Quick copy/paste snippet (for README)
+## 🔁 CI and pre-commit
 
-You can paste this smaller snippet into your README to explain both files in one place:
-
-```markdown
-### Pre-commit & CI — what they run and why
-
-- `.pre-commit-config.yaml` runs local checks before commits:
-  - file hygiene (trim whitespace, add newline), YAML/JSON validation, large file checks.
-  - Terraform formatting/validation/tflint and terraform-docs generation.
-  - Python formatting (black) and linting (flake8 + plugins).
-  - Kubernetes manifest validation via kubeconform and license header enforcement via addlicense.
-  - Run locally:
-    - `pip install pre-commit`
-    - `pre-commit install`
-    - `pre-commit run --all-files`
-
-- `.github/workflows/ci.yml` runs CI checks on push/PR:
-  - Lint job: checkout, setup Python & Terraform, install pinned CLI tools (terraform-docs, kubeconform, addlicense), install pre-commit, run `pre-commit run --all-files`.
-  - tf-validate job: runs `terraform fmt -check`, `terraform init -backend=false`, `terraform validate` for env dirs.
-  - tf-plan job (PRs): runs `terraform plan -out=tfplan.bin -input=false -refresh=false -lock=false`, converts to `tfplan.txt`, uploads as an artifact for reviewers.
-  - CI avoids using remote backend (init uses `-backend=false`) so it doesn't need S3/DynamoDB credentials.
-  - Locally reproduce CI validation with:
-    - `terraform init -backend=false` and `terraform validate` in `env/<env>`; for plan: `terraform plan -input=false -refresh=false -lock=false -out=tfplan.bin` then `terraform show -no-color tfplan.bin > tfplan.txt`.
+- Install pre-commit and run locally:
+```bash
+pre-commit install
+pre-commit run --all-files
 ```
+- CI runs the same hook set, installs pinned CLI tools (terraform-docs, kubeconform, addlicense) and caches pre-commit for speed.
+- CI initializes Terraform with `-backend=false` so it does not need S3/DynamoDB credentials; it validates formatting and generates a plan artifact for PRs.
 
 ---
 
@@ -461,3 +350,4 @@ Apache License 2.0 — see LICENSE.
 ## 👤 Author
 
 **Darian Lee** — Infrastructure Engineer & Cloud Consultant
+[LinkedIn](https://www.linkedin.com/in/darian-873)

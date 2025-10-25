@@ -89,6 +89,16 @@ _aws_net_purge:
 	    aws ec2 delete-network-interface --region $$REGION --network-interface-id $$ENI >/dev/null 2>&1 || true; \
 	  done
 
+# Confirms IP to use for EKS API access and saves to .make_env_public_access
+_confirm_ip:
+	@IP="$$(curl -s https://checkip.amazonaws.com)"; \
+	read -r -p "Allow which IP/CIDR for EKS API? [$$IP/32] " CIDR; \
+	[ -z "$$CIDR" ] && CIDR="$$IP/32"; \
+	read -r -p "Use $$CIDR ? [y/N] " Y; \
+	[ "$$Y" = "y" ] || { echo "Cancelled"; exit 1; }; \
+	printf "export TF_VAR_public_access_cidrs='[\"%s\"]'\n" "$$CIDR" > .make_env_public_access; \
+	echo "✅ Will allow $$CIDR (saved to .make_env_public_access)"
+
 # Initializes Terraform with backend and all modules found in modules/ (Not including .* dirs)
 init: _guard_backend
 	@echo "$(YELLOW)🚀 Initializing Terraform (root) with backend $(BACKEND)$(RESET)"
@@ -103,6 +113,7 @@ init: _guard_backend
 # Terraform plan using env tfvars and outputs to plan file
 plan: _guard_tfvars
 	@echo "$(YELLOW)🧠 Planning for $(ENV)$(RESET)"
+	@. ./.make_env_public_access; \
 	$(TF) plan -var-file=$(TFVARS) -out=plan-$(ENV).tfplan
 
 # Applies previously generated plan file

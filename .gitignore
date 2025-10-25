@@ -16,6 +16,8 @@ terraform.tfplan
 .terraformrc
 terraform.rc
 *.tfplan
+.make_env_public_access
+
 # --- PYTHON (if using helper scripts) ---
 __pycache__/
 *.pyc

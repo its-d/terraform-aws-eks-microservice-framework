@@ -1,43 +1,84 @@
-## Requirements
+# Grafana module — README (updated)
 
-| Name | Version |
-|------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
-| <a name="requirement_helm"></a> [helm](#requirement\_helm) | ~> 2.13 |
-| <a name="requirement_kubernetes"></a> [kubernetes](#requirement\_kubernetes) | ~> 2.29 |
-| <a name="requirement_null"></a> [null](#requirement\_null) | ~> 3.2 |
+This module deploys Grafana into the Kubernetes cluster (namespace `monitoring`) and mounts persistent storage for Grafana data via EFS (PersistentVolume / PersistentVolumeClaim).
 
-## Providers
+Important: default repository wiring
+- In the repository's default root configuration (`main.tf`) the `modules/storage` module **creates** the EFS File System, Access Point, and mount targets.
+- The root module then passes `module.storage.efs_file_system_id` and `module.storage.efs_access_point_id` into this Grafana module.
+- That means, in the default workflow, you do **not** need to provide `efs_file_system_id` or `efs_access_point_id` in your env tfvars — they are produced and wired by the root module.
 
-| Name | Version |
-|------|---------|
-| <a name="provider_helm"></a> [helm](#provider\_helm) | 2.17.0 |
-| <a name="provider_kubernetes"></a> [kubernetes](#provider\_kubernetes) | 2.38.0 |
-| <a name="provider_null"></a> [null](#provider\_null) | 3.2.4 |
+If you open this module in isolation (e.g., to reuse it elsewhere), see the "Using module in isolation" section below.
 
-## Modules
+What this module creates (when configured by the root)
+- Kubernetes namespace `monitoring`
+- Kubernetes PersistentVolume (EFS-backed)
+- Kubernetes PersistentVolumeClaim bound to the PV
+- Helm release for Grafana (the chart is installed into the `monitoring` namespace)
+- Optional null_resource `strip_bad_alb_tags` to handle ALB tag oddities (repo-specific)
 
-No modules.
+Inputs (high level)
+- `identifier` (string) — unique prefix for resource names
+- `region` (string) — AWS region (used as needed)
+- `grafana_admin_user` (string) — Grafana admin username
+- `grafana_admin_password` (string, sensitive) — Grafana admin password
+- `efs_file_system_id` (string, optional) — EFS FS ID to use (default: provided by root via `module.storage`)
+- `efs_access_point_id` (string, optional) — EFS Access Point ID (default: provided by root via `module.storage`)
 
-## Resources
+Default behavior (recommended)
+- Use the repository default: let the root module create and manage EFS via `modules/storage`.
+  - This avoids confusion and ensures mount targets/security groups are created consistently with the VPC.
+  - After `terraform apply` you can inspect the EFS IDs with `terraform output efs_file_system_id` and `terraform output efs_access_point_id` at the root.
 
-| Name | Type |
-|------|------|
-| [helm_release.grafana](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [kubernetes_namespace.monitoring](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/namespace) | resource |
-| [kubernetes_persistent_volume.grafana_pv](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/persistent_volume) | resource |
-| [kubernetes_persistent_volume_claim.grafana_pvc](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/persistent_volume_claim) | resource |
-| [null_resource.strip_bad_alb_tags](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
+Using the module in isolation (advanced)
+- If you want to reuse this Grafana module with an externally-managed EFS:
+  1. Provide `efs_file_system_id` and `efs_access_point_id` variables when calling the module.
+  2. Ensure mount targets and a compatible security group exist in the cluster VPC that allow NFS (TCP/2049) from the cluster ENIs.
+  3. Ensure the Access Point is configured with POSIX user mapping compatible with Grafana (UID/GID used in the PV).
 
-## Inputs
+Examples
 
-| Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
-| <a name="input_grafana_admin_password"></a> [grafana\_admin\_password](#input\_grafana\_admin\_password) | Grafana admin password | `string` | n/a | yes |
-| <a name="input_grafana_admin_user"></a> [grafana\_admin\_user](#input\_grafana\_admin\_user) | Grafana admin username | `string` | n/a | yes |
-| <a name="input_identifier"></a> [identifier](#input\_identifier) | A unique identifier for the resources. | `string` | n/a | yes |
-| <a name="input_region"></a> [region](#input\_region) | The AWS region where the resources are deployed. | `string` | n/a | yes |
+A) Default repository usage (root `main.tf` wires storage → grafana):
+```hcl
+module "storage" {
+  source                = "./modules/storage"
+  identifier            = var.identifier
+  private_subnet_ids    = module.vpc.private_subnet_ids
+  efs_security_group_id = module.security.efs_sg_id
+  common_tags           = local.common_tags
+}
 
-## Outputs
+module "grafana" {
+  source                 = "./modules/grafana"
+  identifier             = var.identifier
+  efs_file_system_id     = module.storage.efs_file_system_id
+  efs_access_point_id    = module.storage.efs_access_point_id
+  grafana_admin_password = var.grafana_admin_password
+  grafana_admin_user     = var.grafana_admin_user
+}
+```
 
-No outputs.
+B) Using module with an external EFS (advanced):
+```hcl
+module "grafana" {
+  source                 = "git::https://github.com/its-d/terraform-aws-eks-microservice-framework.git//modules/grafana?ref=final-touches"
+  identifier             = "myproj"
+  efs_file_system_id     = "fs-0123456789abcdef0"   # external FS id
+  efs_access_point_id    = "fsap-0123456789abcdef0" # external access point
+  grafana_admin_password = var.grafana_admin_password
+  grafana_admin_user     = var.grafana_admin_user
+}
+```
+
+Outputs (useful to expose after apply)
+- `efs_file_system_id` — the EFS file system ID used by Grafana (pass-through of provided or root-generated value)
+- `efs_access_point_id` — the EFS access point ID used by Grafana
+- `grafana_pvc_name` — the PersistentVolumeClaim name created for Grafana
+- `grafana_pv_name` — the PersistentVolume name created for Grafana
+- `grafana_helm_release` — helm_release.grafana.name (useful to inspect helm status)
+
+Troubleshooting tips
+- If PVC stays `Pending`, confirm `efs_file_system_id` and mount targets exist in the VPC & subnets, and that SG rules allow TCP/2049 from the cluster ENIs.
+- Check Grafana pod logs: `kubectl -n monitoring logs -l app.kubernetes.io/name=grafana`
+- Validate PV/PVC binding:
+  - `kubectl get pv -n monitoring`
+  - `kubectl get pvc -n monitoring`
