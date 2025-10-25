@@ -14,8 +14,8 @@
 
 variable "region" {
   type        = string
-  default     = "us-east-1"
   description = "AWS Region to be associated with the deployment."
+  default     = "us-east-1"
 }
 
 variable "environment" {
@@ -35,20 +35,20 @@ variable "identifier" {
 
 variable "endpoint_private_access" {
   type        = bool
-  default     = true
   description = "Enable private (VPC) access to the EKS API endpoint"
+  default     = true
 }
 
 variable "endpoint_public_access" {
   type        = bool
-  default     = true
   description = "Enable public internet access to the EKS API endpoint"
+  default     = true
 }
 
 variable "public_access_cidrs" {
   type        = list(string)
-  default     = ["0.0.0.0/0"] # tighten in env tfvars
   description = "CIDRs allowed to reach the public EKS API"
+  default     = ["0.0.0.0/0"]
 }
 
 variable "grafana_admin_password" {

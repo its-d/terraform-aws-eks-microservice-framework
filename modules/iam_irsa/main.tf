@@ -12,20 +12,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# modules/iam_irsa/main.tf
-# Post-cluster IAM: OIDC provider + AWS Load Balancer Controller IRSA
-
+/*
+----------------------------
+* Locals: ALB Controller IRSA
+* Description: Local values for the ALB Controller IAM Role for Service Accounts (IRSA).
+* Variables:
+  - oidc_issuer_url
+----------------------------
+*/
 locals {
   oidc_issuer_host = replace(var.oidc_issuer_url, "https://", "")
   alb_namespace    = "kube-system"
   alb_serviceacct  = "aws-load-balancer-controller"
 }
 
-# OIDC provider
+/*
+-------------------------
+* Data: TLS Certificate for OIDC
+* Description: Retrieves the TLS certificate for the OIDC issuer URL.
+* Variables:
+  - oidc_issuer_url
+-------------------------
+*/
 data "tls_certificate" "eks_oidc" {
   url = var.oidc_issuer_url
 }
 
+/*
+-------------------------
+* Resource: EKS OIDC Provider
+* Description: Creates an IAM OIDC provider for the EKS cluster.
+* Variables:
+  - oidc_issuer_url
+  - common_tags
+-------------------------
+*/
 resource "aws_iam_openid_connect_provider" "eks_oidc_provider" {
   url             = var.oidc_issuer_url
   client_id_list  = ["sts.amazonaws.com"]
@@ -33,7 +54,16 @@ resource "aws_iam_openid_connect_provider" "eks_oidc_provider" {
   tags            = var.common_tags
 }
 
-# IRSA trust scoped to ALB Controller SA
+/*
+-------------------------
+* Data: ALB Controller IRSA Trust Policy
+* Description: Creates an IAM policy document for the ALB Controller IAM Role for Service Accounts (IRSA) trust relationship.
+* Variables:
+  - oidc_issuer_host
+  - alb_namespace
+  - alb_serviceacct
+-------------------------
+*/
 data "aws_iam_policy_document" "irsa_trust" {
   statement {
     effect  = "Allow"
@@ -55,18 +85,39 @@ data "aws_iam_policy_document" "irsa_trust" {
   }
 }
 
+/*
+-------------------------
+* Resource: ALB Controller IAM Role for Service Accounts (IRSA)
+* Description: Creates an IAM role for the ALB Controller with the necessary trust relationship for IRSA.
+* Variables:
+  - common_tags
+-------------------------
+*/
 resource "aws_iam_role" "alb_irsa" {
   name               = "alb-controller-irsa"
   assume_role_policy = data.aws_iam_policy_document.irsa_trust.json
   tags               = var.common_tags
 }
 
-# ALB Controller policy (JSON file in this module)
+/*
+-------------------------
+* Resource: ALB Controller IAM Policy Attachment
+* Description: Attaches the necessary IAM policy to the ALB Controller IAM Role for Service Accounts (IRSA).
+* Variables: None
+-------------------------
+*/
 resource "aws_iam_policy" "alb_controller" {
   name   = "AWSLoadBalancerControllerIAMPolicy"
   policy = file("${path.module}/policies/aws_load_balancer_controller_iam_policy.json")
 }
 
+/*
+-------------------------
+* Resource: ALB Controller IAM Role Policy Attachment
+* Description: Attaches the ALB Controller IAM policy to the ALB Controller IAM Role for Service Accounts (IRSA).
+* Variables: None
+-------------------------
+*/
 resource "aws_iam_role_policy_attachment" "alb_attach" {
   role       = aws_iam_role.alb_irsa.name
   policy_arn = aws_iam_policy.alb_controller.arn

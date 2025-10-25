@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# modules/iam/outputs.tf
-
-# IRSA role ARN for the AWS Load Balancer Controller
-# modules/iam/outputs.tf
+output "grafana_url" {
+  value       = try(data.kubernetes_ingress.grafana.status[0].load_balancer[0].ingress[0].hostname, "")
+  description = "Public ALB DNS name for Grafana"
+}

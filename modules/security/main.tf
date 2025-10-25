@@ -12,10 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# ------------------------
-# ALB SECURITY GROUP
-# ------------------------
-
+/*
+------------------------
+* Resource: ALB Security Group
+* Description: Security group for ALB fronting EKS Fargate services
+* Variables:
+  - vpc_id
+  - allowed_cidrs
+  - common_tags
+------------------------
+*/
 resource "aws_security_group" "alb_sg" {
   name        = "alb-sg"
   description = "Security group for ALB fronting EKS Fargate services"
@@ -50,10 +56,16 @@ resource "aws_security_group" "alb_sg" {
   tags = var.common_tags
 }
 
-# ------------------------
-# EFS SECURITY GROUP
-# ------------------------
-
+/*
+------------------------
+* Resource: EFS Security Group
+* Description: Security group for EFS access from EKS Fargate pods
+* Variables:
+  - vpc_id
+  - cluster_security_group_id
+  - common_tags
+------------------------
+*/
 resource "aws_security_group" "efs_sg" {
   name        = "efs-sg"
   description = "Security group for EFS access from EKS Fargate pods"
@@ -80,10 +92,14 @@ resource "aws_security_group" "efs_sg" {
   tags = var.common_tags
 }
 
-# ------------------------
-# CSG SECURITY GROUP RULE
-# ------------------------
-
+/*
+------------------------
+* Resource: Cluster Security Group Rule for ALB
+* Description: Allows ALB security group to access EKS cluster security group on port 3000
+* Variables:
+  - cluster_security_group_id
+------------------------
+*/
 resource "aws_security_group_rule" "csg_rule" {
   type                     = "ingress"
   from_port                = 3000

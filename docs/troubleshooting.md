@@ -1,93 +1,188 @@
-# 🧯 Troubleshooting Guide
+# 🩺 Troubleshooting
 
-Common issues and their resolutions for the **terraform-aws-eks-microservice-framework**.
-
----
-
-## 🚫 Load Balancer Not Creating
-
-**Symptom:** Service stuck in `Pending` or NLB not visible in AWS Console.
-
-**Fix:**
-- Ensure `aws-load-balancer-controller` IAM role has full ELBv2 permissions.
-- Confirm the `service.beta.kubernetes.io/aws-load-balancer-type` annotation is set to `"nlb"`.
-- Check logs:
-  ```bash
-  kubectl -n kube-system logs -l app.kubernetes.io/name=aws-load-balancer-controller
-  ```
+Common issues with steps to diagnose and resolve.
 
 ---
 
-## ❌ “AccessDenied” on ELB APIs
+## Load Balancer Not Creating or Service Stuck in Pending
 
-**Symptom:**
+Symptoms
+- Service remains in `Pending`.
+- No NLB/ALB visible in AWS console.
+
+Checks & Fixes
+- Check controller logs:
+```bash
+kubectl -n kube-system logs -l app.kubernetes.io/name=aws-load-balancer-controller
+```
+- Ensure the IRSA role policy includes ELB permissions (see modules/iam_irsa/policies).
+- Confirm Service annotations such as:
+  - `service.beta.kubernetes.io/aws-load-balancer-type: "nlb"`
+  - correct port/targetPort values.
+- Re-apply Terraform/Helm for controller if IAM policy was updated.
+
+---
+
+## AccessDenied on ELB APIs
+
+Example:
 ```
 AccessDenied: User is not authorized to perform: elasticloadbalancing:DescribeListenerAttributes
 ```
 
-**Fix:**
-- Update IRSA policy (`modules/iam_irsa/policies/aws_load_balancer_controller_iam_policy.json`).
-- Reapply Terraform:
-  ```bash
-  make apply ENV=dev
-  ```
+Fixes:
+- Ensure the IAM role used by the controller has the correct managed/custom policy.
+- If using IRSA, verify service account annotation matches the IAM role ARN and the trust policy.
 
 ---
 
-## 🕳️ Pods Pending (No Nodes Available)
+## Pods Pending — No Nodes Available (Fargate profiles)
 
-**Cause:** Namespace lacks Fargate profile coverage.
+Cause:
+- Namespace is not included in a Fargate profile; pods have no scheduling target.
 
-**Fix:**
-- Update your EKS module to include that namespace in the Fargate profile.
-- Re-run `terraform apply`.
-
----
-
-## 🌐 Curl Returns Empty Reply
-
-**Symptom:** NLB resolves but returns no data.
-
-**Fix:**
-- Ensure correct **target port (5678)** and security group ingress rule are set.
-- Validate the endpoint:
-  ```bash
-  kubectl get endpoints hello-world
-  ```
+Fix:
+- Add namespace to Fargate profile in the EKS module, then terraform apply.
+- Alternatively run workloads in a namespace covered by an existing Fargate profile.
 
 ---
 
-## 🧹 Clean Destroy
+## Grafana / EFS Related Issues
 
-To safely remove all resources:
+Symptoms
+- Grafana Pod cannot start or crashes with mount errors.
+- Grafana deployment starts but dashboards are not persisted after restart.
+- EFS mount shows permission denied.
+
+Checks & Fixes
+1. Verify EFS Access Point & File System
+   - Confirm Access Point exists and is correctly configured to use UID/GID expected by Grafana.
+
+2. Check Security Groups and Mount Targets
+   - Ensure EFS mount targets exist in the same subnets/AZs used by the cluster.
+   - Security group for EFS must allow inbound TCP 2049 from the cluster ENIs/SGs.
+   - Troubleshoot NFS connectivity from a pod (use a debug pod with nfs-utils if allowed).
+
+3. Permissions & POSIX User Mapping
+   - If using Access Points, ensure the posixUser is correctly set (Uid/Gid) for Grafana process.
+   - Inspect pod logs for permission errors and adjust Access Point creation settings.
+
+4. PVC / PV Binding
+   - Check PersistentVolume and PersistentVolumeClaim:
 ```bash
-make destroy ENV=dev
+kubectl get pv,pvc -n monitoring
+kubectl describe pvc <pvc-name> -n monitoring
+```
+   - Ensure PV has the correct `volumeHandle` (EFS ID) and access point settings.
+
+1. Grafana Data Persistence
+   - If Grafana starts but dashboards disappear after pod restart, confirm the mount is writable and Grafana is writing to the mounted path (`/var/lib/grafana` or chart-specific path).
+
+---
+
+## Clean Destroy / Resource-in-use Errors (ENIs, Target Groups, EFS mounts)
+
+Cause:
+- K8s controllers or pods left AWS resources attached (ENIs, target groups, EFS mounts). Terraform cannot delete VPCs/subnets/security groups with attached resources.
+
+Recommended Steps:
+1. Delete Kubernetes resources:
+```bash
+kubectl delete -f k8s/service-hello-world.yaml
+kubectl delete -f k8s/deployment-hello-world.yaml
+# If Grafana is installed:
+kubectl -n monitoring delete deploy grafana
+helm -n monitoring uninstall grafana  # if installed via helm
+```
+2. Wait for pods and ENIs to be removed. Verify:
+
+- Kubernetes:
+```bash
+kubectl get pods -A
 ```
 
-If errors occur due to dependency order:
+- AWS:
+  - EC2 Console -> Network Interfaces (Search for cluster name tags)
+  - EFS Console -> Mount targets (ensure no active mounts - note: EFS won't list mounts the same way; verify Pods are gone)
+  - ELB Console -> Target Groups -> Targets (ensure none remain healthy/attached)
+
+3. If Terraform still errors, use:
 ```bash
-terraform state rm <resource_id>
+terraform state list   # find stuck resource addresses
+terraform state rm <address>  # remove resource from state (dangerous; last resort)
 terraform destroy -auto-approve
 ```
+Note: Use state rm only if you accept that Terraform will no longer track that resource.
 
 ---
 
-## 🪪 IAM & IRSA Validation
+## State Lock / DynamoDB Lock Issues
 
-Check the IRSA annotation on the service account:
+Symptoms:
+- terraform init or apply fails due to a stale lock.
+
+Fix:
+- Use DynamoDB console to inspect lock record (table used for locking). Remove lock if you're certain no concurrent process is using it.
+- Configure proper IAM permissions for the user/role that runs Terraform (DynamoDB: PutItem/DeleteItem).
+
+---
+
+## kubeconfig / auth issues
+
+Symptoms:
+- aws eks update-kubeconfig fails, or kubectl commands return Unauthorized.
+
+Fix:
+- Ensure AWS CLI credentials used are allowed to call eks:DescribeCluster and sts:GetCallerIdentity.
+- Confirm region and cluster name are correct.
+- If using assumed roles, include --role-arn with update-kubeconfig or ensure your AWS profile is configured to assume the role.
+
+---
+
+## ALB Controller / Helm failures
+
+Fixes:
+- Verify Helm chart version and values; consult Helm release history:
 ```bash
-kubectl get sa aws-load-balancer-controller -n kube-system -o yaml
+helm -n kube-system list
+helm -n kube-system status <release>
+kubectl -n kube-system describe pod <pod>
+kubectl -n kube-system logs <pod>
+```
+- Ensure chart resources are created in the correct namespace and RBAC is applied.
+
+---
+
+## Debugging Tips & Useful Commands
+
+- View all pods:
+```bash
+kubectl get pods -A
 ```
 
-Ensure the ARN matches your IAM role and trust policy.
+- View events:
+```bash
+kubectl get events --sort-by=.lastTimestamp
+```
+
+- Describe service:
+```bash
+kubectl describe svc <service> -n <namespace>
+```
+
+- Check ENIs in AWS:
+  - EC2 Console -> Network Interfaces, filter by description/tag
+
+- Terraform debugging:
+```bash
+TF_LOG=DEBUG terraform apply
+```
 
 ---
 
-## 🧰 Debugging Tips
-
-- View all pods: `kubectl get pods -A`
-- Get events: `kubectl get events --sort-by=.lastTimestamp`
-- Describe resource: `kubectl describe svc <service>`
-- Check AWS console for NLB target health under “Target Groups”.
-
----
+If you encounter an issue not covered here, collect the following and open an issue (or attach to your PR):
+- terraform plan output
+- terraform state list (if relevant)
+- kubectl get pods -A and kubectl describe for problem resources
+- logs from relevant pods (controller/application)
+- relevant AWS console screenshots or IDs

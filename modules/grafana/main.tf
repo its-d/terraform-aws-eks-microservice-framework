@@ -12,12 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Namespace for Grafana (matches your Fargate selector)
+/*
+-------------------------
+* Resource: Kubernetes Namespace
+* Description: Creates a Kubernetes namespace for monitoring resources.
+* Variables: None
+-------------------------
+*/
 resource "kubernetes_namespace" "monitoring" {
   metadata { name = "monitoring" }
 }
 
-# ---- Static EFS volume (Fargate auto-mounts; no driver install needed) ----
+/*
+-------------------------
+* Resource: Kubernetes Persistent Volume for Grafana
+* Description: Creates a Persistent Volume on EFS for Grafana data storage.
+* Variables:
+  - efs_file_system_id
+  - efs_access_point_id
+-------------------------
+*/
 resource "kubernetes_persistent_volume" "grafana_pv" {
   metadata { name = "${var.identifier}-grafana-pv" }
 
@@ -29,8 +43,7 @@ resource "kubernetes_persistent_volume" "grafana_pv" {
 
     persistent_volume_source {
       csi {
-        driver = "efs.csi.aws.com"
-        # Combine FS + AP in the handle; DO NOT use volume_attributes on Fargate
+        driver        = "efs.csi.aws.com"
         volume_handle = "${var.efs_file_system_id}::${var.efs_access_point_id}"
       }
     }
@@ -39,22 +52,56 @@ resource "kubernetes_persistent_volume" "grafana_pv" {
   }
 }
 
-# ---- Grafana via Helm ----
+/*
+-------------------------
+* Resource: Kubernetes Persistent Volume Claim for Grafana
+* Description: Claims the Persistent Volume for Grafana usage.
+* Variables:
+  - identifier
+-------------------------
+*/
+resource "kubernetes_persistent_volume_claim" "grafana_pvc" {
+  metadata {
+    name      = "${var.identifier}-grafana-pvc"
+    namespace = kubernetes_namespace.monitoring.metadata[0].name
+  }
+
+  spec {
+    access_modes       = ["ReadWriteMany"]
+    storage_class_name = "efs-grafana"
+    resources { requests = { storage = "5Gi" } }
+    volume_name = kubernetes_persistent_volume.grafana_pv.metadata[0].name
+  }
+}
+
+/*
+-------------------------
+* Resource: Helm Release for Grafana
+* Description: Deploys Grafana using the official Helm chart with EFS persistence and ALB ingress.
+* Variables:
+  - grafana_admin_user
+  - grafana_admin_password
+  - region
+-------------------------
+*/
 resource "helm_release" "grafana" {
   name            = "grafana"
   namespace       = kubernetes_namespace.monitoring.metadata[0].name
   repository      = "https://grafana.github.io/helm-charts"
   chart           = "grafana"
-  version         = "8.5.12" # any stable; pin to avoid surprises
+  version         = "8.5.12"
   wait            = true
   timeout         = 900
   atomic          = true
   cleanup_on_fail = true
 
-  # persistence: use our existing PVC (EFS)
   set {
     name  = "persistence.enabled"
-    value = "false"
+    value = "true"
+  }
+  set {
+    name  = "persistence.existingClaim"
+    value = kubernetes_persistent_volume_claim.grafana_pvc.metadata[0].name
   }
 
   set {
@@ -71,21 +118,6 @@ resource "helm_release" "grafana" {
   }
 
   set {
-    name  = "ingress.hosts[0]"
-    value = ""
-  }
-
-  set {
-    name  = "ingress.path"
-    value = "/"
-  }
-
-  set {
-    name  = "ingress.pathType"
-    value = "Prefix"
-  }
-
-  set {
     name  = "livenessProbe.enabled"
     value = "true"
   }
@@ -99,14 +131,8 @@ resource "helm_release" "grafana" {
   }
 
   set {
-    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/healthcheck-path"
-    value = "/api/health"
-  }
-
-  # service on 80 → targetPort 3000 (Grafana default)
-  set {
     name  = "service.type"
-    value = "NodePort"
+    value = "ClusterIP"
   }
   set {
     name  = "service.port"
@@ -117,7 +143,6 @@ resource "helm_release" "grafana" {
     value = "3000"
   }
 
-  # simple auth (you can move to a secret later)
   set {
     name  = "adminUser"
     value = var.grafana_admin_user
@@ -127,7 +152,19 @@ resource "helm_release" "grafana" {
     value = var.grafana_admin_password
   }
 
-  # ALB ingress
+  set {
+    name  = "serviceAccount.create"
+    value = "true"
+  }
+  set {
+    name  = "serviceAccount.name"
+    value = "grafana"
+  }
+  set {
+    name  = "env.AWS_REGION"
+    value = var.region
+  }
+
   set {
     name  = "ingress.enabled"
     value = "true"
@@ -136,28 +173,71 @@ resource "helm_release" "grafana" {
     name  = "ingress.ingressClassName"
     value = "alb"
   }
-
   set {
     name  = "ingress.annotations.kubernetes\\.io/ingress\\.class"
     value = "alb"
+  }
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/target-type"
+    value = "ip"
   }
   set {
     name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/scheme"
     value = "internet-facing"
   }
   set {
-    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/target-type"
-    value = "ip"
-  }
-  # HTTP only to start; HTTPS later with cert
-  set {
     name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/listen-ports"
     value = "[{\"HTTP\":80}]"
   }
-
-  # basic host-rule-less path
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/healthcheck-path"
+    value = "/api/health"
+  }
   set {
     name  = "ingress.path"
     value = "/"
   }
+  set {
+    name  = "ingress.pathType"
+    value = "Prefix"
+  }
+
+  set {
+    name  = "ingress.hosts[0]"
+    value = ""
+  }
+
+  depends_on = [
+    kubernetes_namespace.monitoring,
+    kubernetes_persistent_volume.grafana_pv,
+    kubernetes_persistent_volume_claim.grafana_pvc
+  ]
+}
+
+/*
+-------------------------
+* Resource: Null Resource to Strip Bad ALB Tags
+* Description: Removes invalid tags from the ALB created by the Grafana Helm chart.
+* Variables: None
+-------------------------
+*/
+resource "null_resource" "strip_bad_alb_tags" {
+  triggers = {
+    rel = helm_release.grafana.version
+  }
+  provisioner "local-exec" {
+    command = <<-EOC
+      set -euo pipefail
+      kubectl -n monitoring annotate ingress grafana alb.ingress.kubernetes.io/tags- || true
+    EOC
+  }
+  depends_on = [helm_release.grafana]
+}
+
+data "kubernetes_ingress" "grafana" {
+  metadata {
+    name      = "grafana"
+    namespace = "monitoring"
+  }
+  depends_on = [helm_release.grafana]
 }

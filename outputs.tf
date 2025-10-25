@@ -12,7 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Root-level outputs to make nested module values easy to grab
+output "grafana_url" {
+  description = "The URL of the Grafana instance"
+  value       = module.grafana.grafana_url
+}
+
+output "region" {
+  description = "AWS region"
+  value       = var.region
+}
 
 output "cluster_name" {
   description = "EKS cluster name"
@@ -44,7 +52,6 @@ output "alb_sg_id" {
   value       = module.security.alb_sg_id
 }
 
-# Optional but handy
 output "vpc_id" {
   description = "VPC ID"
   value       = module.vpc.vpc_id
@@ -62,7 +69,7 @@ output "cluster_security_group_id" {
 
 output "efs_file_system_id" {
   description = "EFS file system ID"
-  value       = module.storage
+  value       = module.storage.efs_file_system_id
 }
 
 output "efs_access_point_id" {

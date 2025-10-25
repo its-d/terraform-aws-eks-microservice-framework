@@ -41,3 +41,9 @@ variable "efs_access_point_id" {
   description = "The ID of the EFS access point to be used by Grafana for storage."
 
 }
+
+variable "region" {
+  type        = string
+  description = "The AWS region where the resources are deployed."
+
+}

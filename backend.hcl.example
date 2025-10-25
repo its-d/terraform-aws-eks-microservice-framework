@@ -1,0 +1,5 @@
+bucket         = ""
+key            = "path/to/file/file"
+region         = ""
+dynamodb_table = ""
+encrypt        = true
