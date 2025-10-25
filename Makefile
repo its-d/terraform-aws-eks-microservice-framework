@@ -99,6 +99,11 @@ _confirm_ip:
 	printf "export TF_VAR_public_access_cidrs='[\"%s\"]'\n" "$$CIDR" > .make_env_public_access; \
 	echo "✅ Will allow $$CIDR (saved to .make_env_public_access)"
 
+# Get Grafana URL after apply
+grafana-url:
+	@kubectl -n monitoring get ingress grafana \
+	  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}'
+
 # Initializes Terraform with backend and all modules found in modules/ (Not including .* dirs)
 init: _guard_backend
 	@echo "$(YELLOW)🚀 Initializing Terraform (root) with backend $(BACKEND)$(RESET)"

@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+output "grafana_url" {
+  description = "The URL of the Grafana instance"
+  value       = module.grafana.grafana_url
+}
+
 output "region" {
   description = "AWS region"
   value       = var.region

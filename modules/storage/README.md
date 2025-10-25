@@ -1,41 +1,43 @@
-## Requirements
+# Storage (EFS) module — README
 
-| Name | Version |
-|------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 6.0 |
+Purpose
+- Create an Amazon EFS file system, an Access Point configured for Grafana, and mount targets in the cluster's private subnets.
+- Expose EFS outputs consumed by the Grafana module and other consumers.
 
-## Providers
+What this module creates
+- aws_efs_file_system (encrypted, lifecycle set)
+- aws_efs_mount_target resources (one per private subnet)
+- aws_efs_access_point with POSIX mapping for Grafana
+- Outputs: efs_file_system_id, efs_access_point_id
 
-| Name | Version |
-|------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.18.0 |
+Quick usage (root wiring)
+```hcl
+module "storage" {
+  source                = "./modules/storage"
+  identifier            = var.identifier
+  private_subnet_ids    = module.vpc.private_subnet_ids
+  efs_security_group_id = module.security.efs_sg_id
+  common_tags           = local.common_tags
+}
+```
 
-## Modules
+Key inputs
+- identifier — string; naming prefix.
+- private_subnet_ids — list(string); mount targets created in these subnets.
+- efs_security_group_id — string; security group used for mount targets (must allow NFS/TCP2049).
+- common_tags — map(string).
 
-No modules.
+Key outputs
+- efs_file_system_id — string; the created EFS filesystem id.
+- efs_access_point_id — string; created access point id used by Grafana.
 
-## Resources
+Operational notes
+- The access point is created with POSIX uid/gid values appropriate for Grafana (module defaults may set uid/gid = 472). Adjust if your container runs under a different UID.
+- Ensure mount targets are created in subnets accessible to the cluster so pods can mount EFS across AZs.
 
-| Name | Type |
-|------|------|
-| [aws_efs_access_point.efs_access_point](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/efs_access_point) | resource |
-| [aws_efs_file_system.efs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/efs_file_system) | resource |
-| [aws_efs_mount_target.efs_mount](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/efs_mount_target) | resource |
+Troubleshooting
+- If mount targets fail or are not reachable: verify `private_subnet_ids` are correct and that the `efs_security_group_id` allows NFS from the cluster SGs.
+- If permission problems appear on mount: check the access point POSIX mapping and directory permissions.
 
-## Inputs
-
-| Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
-| <a name="input_common_tags"></a> [common\_tags](#input\_common\_tags) | Common tags | `map(string)` | `{}` | no |
-| <a name="input_efs_security_group_id"></a> [efs\_security\_group\_id](#input\_efs\_security\_group\_id) | Security Group ID to associate with the EFS mount targets | `string` | n/a | yes |
-| <a name="input_identifier"></a> [identifier](#input\_identifier) | Identifier for naming resources | `string` | n/a | yes |
-| <a name="input_private_subnet_ids"></a> [private\_subnet\_ids](#input\_private\_subnet\_ids) | List of private subnet IDs where EFS mount targets will be created | `list(string)` | n/a | yes |
-
-## Outputs
-
-| Name | Description |
-|------|-------------|
-| <a name="output_efs_access_point_id"></a> [efs\_access\_point\_id](#output\_efs\_access\_point\_id) | EFS access point ID for Grafana |
-| <a name="output_efs_file_system_id"></a> [efs\_file\_system\_id](#output\_efs\_file\_system\_id) | EFS file system ID |
-| <a name="output_grafana_efs_ap_id"></a> [grafana\_efs\_ap\_id](#output\_grafana\_efs\_ap\_id) | Alias of the EFS access point ID for Grafana |
+Security
+- Use security groups to restrict NFS access to the cluster SGs rather than public CIDRs.

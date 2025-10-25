@@ -1,41 +1,35 @@
-## Requirements
+# IAM core module — README
 
-| Name | Version |
-|------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 6.0 |
+Purpose
+- Create IAM roles, policies, and service principals required to operate the EKS cluster and platform components (cluster control plane role, pod-execution role, CI role recommendations).
+- Provide least-privilege IAM artifacts consumed by other modules.
 
-## Providers
+What this module provides (typical)
+- IAM role(s) for the EKS control plane (if created here)
+- Pod execution role ARN used by Fargate / IRSA flows
+- Optional managed/inline policies required by platform components
+- Outputs referencing role ARNs used by EKS module and other modules
 
-| Name | Version |
-|------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.18.0 |
+Quick usage (root wiring)
+```hcl
+module "iam" {
+  source      = "./modules/iam"
+  identifier  = var.identifier
+  common_tags = local.common_tags
+}
+```
 
-## Modules
+Key inputs
+- identifier — string; prefix for role names.
+- common_tags — map(string); tags applied to IAM resources.
 
-No modules.
+Key outputs (examples)
+- eks_cluster_role_arn — ARN of the EKS control plane role (if created here).
+- pod_execution_role_arn — ARN for pod-execution (IRSA) role.
 
-## Resources
+Security & best practices
+- Scope policies to least privilege; avoid `*` where possible.
+- For CI/automation, create a narrowly scoped role with S3/DynamoDB state privileges plus limited EKS/EFS actions. Provide an example policy in docs (recommended).
 
-| Name | Type |
-|------|------|
-| [aws_iam_role.eks_cluster_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.eks_pod_execution_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role_policy_attachment.eks_cluster_AmazonEKSClusterPolicy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.eks_pod_AmazonEKSFargatePodExecutionRolePolicy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_role_policy_attachment.eks_pod_CloudWatchAgentServerPolicy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_iam_policy_document.eks_cluster_iam_policy_document](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.eks_pod_execution_role_iam_policy_document](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-
-## Inputs
-
-| Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
-| <a name="input_common_tags"></a> [common\_tags](#input\_common\_tags) | Common tags | `map(string)` | `{}` | no |
-
-## Outputs
-
-| Name | Description |
-|------|-------------|
-| <a name="output_cluster_role_arn"></a> [cluster\_role\_arn](#output\_cluster\_role\_arn) | IAM role ARN for the EKS control plane |
-| <a name="output_pod_execution_role_arn"></a> [pod\_execution\_role\_arn](#output\_pod\_execution\_role\_arn) | Fargate pod execution role ARN |
+Troubleshooting
+- AccessDenied errors: check the policy attachments and trust relationships for roles being assumed by EKS or CI agents.

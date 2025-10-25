@@ -1,36 +1,48 @@
-## Requirements
+# VPC module — README
 
-| Name | Version |
-|------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 6.0 |
+Purpose
+- Create a well-structured, multi-AZ VPC that is the single source of truth for networking in this framework.
+- Provide the networking outputs consumed by other modules (EKS, Storage, Security).
 
-## Providers
+What this module provides
+- VPC with configurable CIDR.
+- Public and private subnets across AZs (default configured in module call).
+- Internet Gateway and NAT Gateway configuration.
+- Route tables and associations.
+- Outputs commonly used by other modules (vpc_id, private_subnet_ids, public_subnet_ids, availability_zones).
 
-No providers.
+Why use this module
+- Keeps networking concerns isolated and reusable across environments.
+- Ensures consistent subnet layout and tagging for downstream modules.
 
-## Modules
+Quick usage (root wiring)
+```hcl
+module "vpc" {
+  source      = "./modules/vpc"
+  environment = var.environment
+  identifier  = var.identifier
+  common_tags = local.common_tags
+}
+```
 
-| Name | Source | Version |
-|------|--------|---------|
-| <a name="module_vpc"></a> [vpc](#module\_vpc) | terraform-aws-modules/vpc/aws | ~> 6.4 |
+Key inputs (high level)
+- identifier — string; prefix for resource names.
+- environment — string; environment name (dev/test/prod).
+- cidr — string; VPC CIDR block (overridable).
+- azs — list(string); which AZs to use (module defaults to a reasonable list).
+- common_tags — map(string); tags applied to resources.
 
-## Resources
+Key outputs (examples)
+- vpc_id — the created VPC ID.
+- private_subnet_ids — list of private subnet IDs (used by EKS and storage mount targets).
+- public_subnet_ids — list of public subnet IDs.
+- availability_zones — list of AZs used.
 
-No resources.
+Operational notes & recommendations
+- Defaults are tuned for a two-AZ deployment for cost/complexity balance. Choose additional AZs in production as needed.
+- If you intend to reuse an existing VPC, prefer wiring in `private_subnet_ids` and other values into downstream modules rather than changing this module.
+- Monitor NAT gateway count and costs in non-production environments.
 
-## Inputs
-
-| Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
-| <a name="input_common_tags"></a> [common\_tags](#input\_common\_tags) | A map of common tags to apply to all resources. | `map(string)` | `{}` | no |
-| <a name="input_environment"></a> [environment](#input\_environment) | The environment for the resources (e.g., dev, staging, prod). | `string` | n/a | yes |
-| <a name="input_identifier"></a> [identifier](#input\_identifier) | A unique identifier for the resources. | `string` | n/a | yes |
-
-## Outputs
-
-| Name | Description |
-|------|-------------|
-| <a name="output_private_subnet_ids"></a> [private\_subnet\_ids](#output\_private\_subnet\_ids) | List of private subnet IDs |
-| <a name="output_public_subnet_ids"></a> [public\_subnet\_ids](#output\_public\_subnet\_ids) | List of public subnet IDs |
-| <a name="output_vpc_id"></a> [vpc\_id](#output\_vpc\_id) | The ID of the VPC |
+Troubleshooting
+- If resources fail to create: validate AZ names and available IPs in the chosen CIDR blocks.
+- If EKS or EFS mount targets fail: ensure subnets have sufficient IP space.

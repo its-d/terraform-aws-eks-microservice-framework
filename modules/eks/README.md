@@ -1,48 +1,51 @@
-## Requirements
+# EKS module — README
 
-| Name | Version |
-|------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 6.0 |
-| <a name="requirement_null"></a> [null](#requirement\_null) | ~> 3.2 |
+Purpose
+- Provision the Amazon EKS control plane and Fargate profiles required to run Kubernetes workloads with minimal operational overhead.
+- Expose cluster metadata required by downstream modules (cluster name, cluster security group ID, OIDC issuer URL for IRSA).
 
-## Providers
+What this module provides
+- aws_eks_cluster resource
+- aws_eks_fargate_profile resource(s) for selected namespaces
+- A small create-time helper that attempts to update local kubeconfig and patch CoreDNS for Fargate scheduling (runs only on initial create)
+- Outputs: cluster_name, cluster_security_group_id, oidc_issuer_url, and other cluster metadata
 
-| Name | Version |
-|------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.18.0 |
-| <a name="provider_null"></a> [null](#provider\_null) | 3.2.4 |
+Important: kubeconfig & post-create behavior (safe-by-default)
+- On initial resource creation, the module runs a local create-time provisioner that:
+  - Attempts to add the new cluster to the local kubeconfig using `aws eks update-kubeconfig` (only if the cluster is not already present in kubeconfig).
+  - Attempts to patch the CoreDNS deployment (in kube-system) so it can schedule on Fargate (adds nodeSelector/tolerations) and waits for rollout (with a timeout). Non-fatal issues are logged as warnings.
+- The create-time provisioner runs exactly once (when Terraform creates the cluster resource). It will not run for normal subsequent `terraform apply` calls.
 
-## Modules
+Quick usage (root wiring)
+```hcl
+module "eks" {
+  source                = "./modules/eks"
+  identifier            = var.identifier
+  private_subnet_ids    = module.vpc.private_subnet_ids
+  cluster_role_arn      = module.iam.eks_cluster_role_arn
+  pod_execution_role_arn = module.iam.pod_execution_role_arn
+  common_tags           = local.common_tags
+}
+```
 
-No modules.
+Key inputs (high level)
+- identifier — string; prefix for resource names.
+- private_subnet_ids — list(string); subnets for control plane ENIs and Fargate.
+- cluster_role_arn — string; IAM role ARN for the EKS control plane.
+- pod_execution_role_arn — string; pod execution role used by Fargate pods (IRSA).
+- endpoint_private_access / endpoint_public_access — bool; control plane accessibility.
+- public_access_cidrs — list(string); allowed CIDRs if public access enabled.
 
-## Resources
+Key outputs
+- cluster_name — the EKS cluster name (useful for aws eks update-kubeconfig).
+- cluster_security_group_id — security group ID used by the cluster (useful for SG rules).
+- oidc_issuer_url — OIDC issuer URL for configuring IRSA.
 
-| Name | Type |
-|------|------|
-| [aws_eks_cluster.eks_cluster](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_cluster) | resource |
-| [aws_eks_fargate_profile.fargate_profile](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_fargate_profile) | resource |
-| [null_resource.patch_coredns_fargate](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
+Requirements & providers
+- Terraform >= 1.5.0
+- AWS provider ~> 6.0
+- null provider ~> 3.2 (used for optional local steps)
 
-## Inputs
-
-| Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
-| <a name="input_cluster_role_arn"></a> [cluster\_role\_arn](#input\_cluster\_role\_arn) | The ARN of the IAM role for the EKS cluster. | `string` | n/a | yes |
-| <a name="input_common_tags"></a> [common\_tags](#input\_common\_tags) | A map of common tags to apply to all resources. | `map(string)` | `{}` | no |
-| <a name="input_endpoint_private_access"></a> [endpoint\_private\_access](#input\_endpoint\_private\_access) | Whether the EKS API server is reachable from within the VPC | `bool` | `true` | no |
-| <a name="input_endpoint_public_access"></a> [endpoint\_public\_access](#input\_endpoint\_public\_access) | Whether the EKS API server is reachable from the internet | `bool` | `true` | no |
-| <a name="input_identifier"></a> [identifier](#input\_identifier) | A unique identifier for the resources. | `string` | n/a | yes |
-| <a name="input_pod_execution_role_arn"></a> [pod\_execution\_role\_arn](#input\_pod\_execution\_role\_arn) | The ARN of the IAM role for EKS pod execution. | `string` | n/a | yes |
-| <a name="input_private_subnet_ids"></a> [private\_subnet\_ids](#input\_private\_subnet\_ids) | A list of subnet IDs for the EKS cluster. | `list(string)` | n/a | yes |
-| <a name="input_public_access_cidrs"></a> [public\_access\_cidrs](#input\_public\_access\_cidrs) | Allowed CIDRs for public EKS API access (only used if public access is enabled) | `list(string)` | <pre>[<br/>  "0.0.0.0/0"<br/>]</pre> | no |
-| <a name="input_region"></a> [region](#input\_region) | The AWS region to deploy the EKS cluster in. | `string` | n/a | yes |
-
-## Outputs
-
-| Name | Description |
-|------|-------------|
-| <a name="output_cluster_name"></a> [cluster\_name](#output\_cluster\_name) | value of the EKS cluster name |
-| <a name="output_cluster_security_group_id"></a> [cluster\_security\_group\_id](#output\_cluster\_security\_group\_id) | The EKS Cluster Security Group ID used by Fargate pod ENIs |
-| <a name="output_oidc_issuer_url"></a> [oidc\_issuer\_url](#output\_oidc\_issuer\_url) | OIDC issuer URL for the EKS cluster |
+Troubleshooting
+- If kubeconfig update fails: ensure `aws` CLI is installed and credentials are available.
+- If CoreDNS rollout does not complete: inspect pod logs in kube-system and the EKS control plane events.
