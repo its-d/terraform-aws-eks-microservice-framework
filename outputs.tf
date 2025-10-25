@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+output "region" {
+  description = "AWS region"
+  value       = var.region
+}
+
 output "cluster_name" {
   description = "EKS cluster name"
   value       = module.eks.cluster_name

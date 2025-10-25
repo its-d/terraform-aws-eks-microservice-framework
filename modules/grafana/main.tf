@@ -36,10 +36,10 @@ resource "kubernetes_persistent_volume" "grafana_pv" {
   metadata { name = "${var.identifier}-grafana-pv" }
 
   spec {
-    capacity                         = { storage = "5Gi" } # logical; EFS is elastic
+    capacity                         = { storage = "5Gi" }
     access_modes                     = ["ReadWriteMany"]
-    storage_class_name               = "efs-grafana" # just a label to match the PVC
-    persistent_volume_reclaim_policy = "Retain"      # keep data if PVC/Release is removed
+    storage_class_name               = "efs-grafana"
+    persistent_volume_reclaim_policy = "Delete"
 
     persistent_volume_source {
       csi {

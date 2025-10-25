@@ -67,7 +67,7 @@ _state_rm_k8s:
 _aws_net_purge:
 	@echo "$(YELLOW)🧼 Pre-cleaning ALBs & ENIs in this env$(RESET)"
 	# detect region and vpc (fallback-safe)
-	@REGION="$$(grep '^region' $(TFVARS) | awk '{print $$3}' | tr -d '"')" ; \
+	@REGION="$$(terraform output -raw region 2>/dev/null || true)" ; \
 	VPC_ID="$$(terraform output -raw vpc_id 2>/dev/null || true)" ; \
 	[ -z "$$REGION" ] && REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}" ; \
 	echo "  → region=$$REGION vpc=$$VPC_ID" ; \
@@ -95,7 +95,7 @@ _confirm_ip:
 	read -r -p "Allow which IP/CIDR for EKS API? [$$IP/32] " CIDR; \
 	[ -z "$$CIDR" ] && CIDR="$$IP/32"; \
 	read -r -p "Use $$CIDR ? [y/N] " Y; \
-	[ "$$Y" = "y" ] || { echo "Cancelled"; exit 1; }; \
+	[ "$$Y" = "y" ] || { echo "IP confirmation cancelled. Please set public_access_cidrs manually in your tfvars file."; exit 1; }; \
 	printf "export TF_VAR_public_access_cidrs='[\"%s\"]'\n" "$$CIDR" > .make_env_public_access; \
 	echo "✅ Will allow $$CIDR (saved to .make_env_public_access)"
 
