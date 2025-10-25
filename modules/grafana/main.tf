@@ -202,6 +202,11 @@ resource "helm_release" "grafana" {
     value = "Prefix"
   }
 
+  set {
+    name  = "ingress.hosts[0]"
+    value = ""
+  }
+
   depends_on = [
     kubernetes_namespace.monitoring,
     kubernetes_persistent_volume.grafana_pv,
