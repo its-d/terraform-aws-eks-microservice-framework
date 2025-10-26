@@ -233,11 +233,3 @@ resource "null_resource" "strip_bad_alb_tags" {
   }
   depends_on = [helm_release.grafana]
 }
-
-data "kubernetes_ingress" "grafana" {
-  metadata {
-    name      = "grafana"
-    namespace = "monitoring"
-  }
-  depends_on = [helm_release.grafana]
-}

@@ -1,5 +1,5 @@
-bucket         = ""
-key            = "path/to/file/file"
-region         = ""
-dynamodb_table = ""
+bucket         = "bucket-name"
+key            = "/path/to/file.tfstate"
+region         = "region"
+dynamodb_table = "table-name"
 encrypt        = true

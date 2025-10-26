@@ -11,8 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-output "grafana_url" {
-  value       = try(data.kubernetes_ingress.grafana.status[0].load_balancer[0].ingress[0].hostname, "")
-  description = "Public ALB DNS name for Grafana"
-}

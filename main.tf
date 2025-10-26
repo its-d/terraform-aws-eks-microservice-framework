@@ -100,7 +100,6 @@ and Fargate Profile setup
 module "eks" {
   source                  = "./modules/eks/"
   identifier              = var.identifier
-  region                  = var.region
   common_tags             = local.common_tags
   private_subnet_ids      = module.vpc.private_subnet_ids
   cluster_role_arn        = module.iam.cluster_role_arn

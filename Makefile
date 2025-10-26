@@ -92,17 +92,16 @@ _aws_net_purge:
 # Confirms IP to use for EKS API access and saves to .make_env_public_access
 _confirm_ip:
 	@IP="$$(curl -s https://checkip.amazonaws.com)"; \
-	read -r -p "Allow which IP/CIDR for EKS API? [$$IP/32] " CIDR; \
-	[ -z "$$CIDR" ] && CIDR="$$IP/32"; \
-	read -r -p "Use $$CIDR ? [y/N] " Y; \
-	[ "$$Y" = "y" ] || { echo "IP confirmation cancelled. Please set public_access_cidrs manually in your tfvars file."; exit 1; }; \
+	echo "Detected CIDR: $$IP/32"; \
+	read -r -p "Use this CIDR? (y/N) " Y; \
+	case "$$Y" in \
+	  [yY]) CIDR="$$IP/32";; \
+	  [nN]) read -r -p "Enter IP/CIDR to use (e.g., $$IP/32): " CIDR; \
+	         [ -z "$$CIDR" ] && { echo "❌ Cancelled."; exit 1; } ;; \
+	  *) echo "❌ Cancelled."; exit 1;; \
+	esac; \
 	printf "export TF_VAR_public_access_cidrs='[\"%s\"]'\n" "$$CIDR" > .make_env_public_access; \
 	echo "✅ Will allow $$CIDR (saved to .make_env_public_access)"
-
-# Get Grafana URL after apply
-grafana-url:
-	@kubectl -n monitoring get ingress grafana \
-	  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}'
 
 # Initializes Terraform with backend and all modules found in modules/ (Not including .* dirs)
 init: _guard_backend
@@ -118,6 +117,7 @@ init: _guard_backend
 # Terraform plan using env tfvars and outputs to plan file
 plan: _guard_tfvars
 	@echo "$(YELLOW)🧠 Planning for $(ENV)$(RESET)"
+	$(MAKE) _confirm_ip
 	@. ./.make_env_public_access; \
 	$(TF) plan -var-file=$(TFVARS) -out=plan-$(ENV).tfplan
 
@@ -132,7 +132,8 @@ destroy: _guard_tfvars
 	$(MAKE) _aws_net_purge
 	$(MAKE) _force_k8s_purge
 	$(MAKE) _state_rm_k8s
-	@$(TF) destroy -var-file=$(TFVARS)
+	@TF_LOG=DEBUG TF_LOG_PATH=./tf.log \
+	  $(TF) destroy -var-file=$(TFVARS) -refresh=false -lock-timeout=5m
 
 # Validates Terraform configuration syntax at root
 validate:

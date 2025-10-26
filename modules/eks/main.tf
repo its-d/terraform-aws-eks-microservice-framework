@@ -84,43 +84,32 @@ resource "aws_eks_fargate_profile" "fargate_profile" {
 
 /*
 ----------------------------
-* Resource: Patch CoreDNS Deployment for Fargate
-* Description: Patches the CoreDNS deployment to run on Fargate by adding the necessary nodeSelector and tolerations.
-* Variables required:
-  - region
+* Resource: EKS CoreDNS Addon Patch for Fargate
+* Description: Configures the CoreDNS addon to run on Fargate nodes.
+* Variables required: None
 ----------------------------
 */
-resource "null_resource" "patch_coredns_fargate" {
-  triggers = {
-    cluster_endpoint = aws_eks_cluster.eks_cluster.endpoint
-  }
+resource "aws_eks_addon" "coredns" {
+  cluster_name = aws_eks_cluster.eks_cluster.name
+  addon_name   = "coredns"
+
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  configuration_values = jsonencode({
+    nodeSelector = {
+      "eks.amazonaws.com/compute-type" = "fargate"
+    }
+    tolerations = [{
+      key      = "eks.amazonaws.com/compute-type"
+      operator = "Equal"
+      value    = "fargate"
+      effect   = "NoSchedule"
+    }]
+  })
 
   depends_on = [
     aws_eks_cluster.eks_cluster,
     aws_eks_fargate_profile.fargate_profile
   ]
-
-  provisioner "local-exec" {
-    command = <<-EOC
-      set -euo pipefail
-      aws eks update-kubeconfig --name ${aws_eks_cluster.eks_cluster.name} --region ${var.region}
-      kubectl -n kube-system patch deployment coredns \
-        -p '{
-          "spec": {
-            "template": {
-              "spec": {
-                "nodeSelector": {"eks.amazonaws.com/compute-type":"fargate"},
-                "tolerations": [{
-                  "key":"eks.amazonaws.com/compute-type",
-                  "operator":"Equal",
-                  "value":"fargate",
-                  "effect":"NoSchedule"
-                }]
-              }
-            }
-          }
-        }'
-      kubectl -n kube-system rollout status deploy/coredns --timeout=120s
-    EOC
-  }
 }
