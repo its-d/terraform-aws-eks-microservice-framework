@@ -92,13 +92,18 @@ _aws_net_purge:
 # Confirms IP to use for EKS API access and saves to .make_env_public_access
 _confirm_ip:
 	@IP="$$(curl -s https://checkip.amazonaws.com)"; \
-	echo "Detected CIDR: $$IP/32"; \
-	read -r -p "Use this CIDR? (y/N) " Y; \
-	case "$$Y" in \
-	  [yY]) CIDR="$$IP/32";; \
-	  [nN]) read -r -p "Enter IP/CIDR to use (e.g., $$IP/32): " CIDR; \
-	         [ -z "$$CIDR" ] && { echo "❌ Cancelled."; exit 1; } ;; \
-	  *) echo "❌ Cancelled."; exit 1;; \
+	TFVARS_IP="$$(grep -E 'public_access_cidrs' $(TFVARS) 2>/dev/null | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/32' | head -n1)"; \
+	echo "🌐 Detected current public IP: $$IP"; \
+	if [ -n "$$TFVARS_IP" ]; then \
+	  echo "🗂  IP configured in $(TFVARS): $$TFVARS_IP"; \
+	else \
+	  echo "⚠️  No public_access_cidrs found in $(TFVARS)"; \
+	fi; \
+	read -r -p "Use the IP from $(TFVARS) (y/N)? " USE_TFVARS; \
+	case "$$USE_TFVARS" in \
+	  [yY]) CIDR="$$TFVARS_IP";; \
+	  *) read -r -p "Enter IP/CIDR to use (detected $$IP/32): " CIDR; \
+	     [ -z "$$CIDR" ] && CIDR="$$IP/32";; \
 	esac; \
 	printf "export TF_VAR_public_access_cidrs='[\"%s\"]'\n" "$$CIDR" > .make_env_public_access; \
 	echo "✅ Will allow $$CIDR (saved to .make_env_public_access)"
