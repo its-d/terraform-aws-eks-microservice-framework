@@ -65,29 +65,70 @@ _state_rm_k8s:
 
 # Cleans up leftover AWS network resources (ALBs/ENIs) before destroy
 _aws_net_purge:
-	@echo "$(YELLOW)🧼 Pre-cleaning ALBs & ENIs in this env$(RESET)"
+	@echo "$(YELLOW)🧼 Pre-cleaning LBs, ENIs, SGs$(RESET)"
 	# detect region and vpc (fallback-safe)
-	@REGION="$$(terraform output -raw region 2>/dev/null || true)" ; \
-	VPC_ID="$$(terraform output -raw vpc_id 2>/dev/null || true)" ; \
-	[ -z "$$REGION" ] && REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}" ; \
-	echo "  → region=$$REGION vpc=$$VPC_ID" ; \
+	@REGION="$$(terraform output -raw region 2>/dev/null || true)"; \
+	VPC_ID="$$(terraform output -raw vpc_id 2>/dev/null || true)"; \
+	[ -z "$$REGION" ] && REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}"; \
+	# fallback to cluster-derived VPC if outputs missing
+	if [ -z "$$VPC_ID" ] || [ "$$VPC_ID" = "None" ]; then \
+	  VPC_ID="$$(aws eks describe-cluster --name final-eks-cluster --region $$REGION \
+	    --query 'cluster.resourcesVpcConfig.vpcId' --output text 2>/dev/null || true)"; \
+	fi; \
+	if [ -z "$$VPC_ID" ] || [ "$$VPC_ID" = "None" ]; then \
+	  echo "$(YELLOW)↪ No VPC ID found. Skipping purge.$(RESET)"; exit 0; \
+	fi; \
+	echo "  → region=$$REGION vpc=$$VPC_ID"; \
 	\
-	# delete ALBs first
+	# 1) delete ALBs/NLBs first
 	-@aws elbv2 describe-load-balancers --region $$REGION \
-	  --query 'LoadBalancers[?VpcId==`'$$VPC_ID'`].LoadBalancerArn' --output text 2>/dev/null | \
-	  xargs -r -n1 aws elbv2 delete-load-balancer --region $$REGION --load-balancer-arn >/dev/null 2>&1 || true ; \
+	  --query "LoadBalancers[?VpcId=='$$VPC_ID'].LoadBalancerArn" --output text 2>/dev/null | \
+	  xargs -r -n1 aws elbv2 delete-load-balancer --region $$REGION --load-balancer-arn >/dev/null 2>&1 || true; \
 	\
-	# then remove leftover ENIs (detach if attached)
+	# 2) remove stray ENIs (detach if attached)
 	-@for eni in $$(aws ec2 describe-network-interfaces --region $$REGION \
 	      --filters Name=vpc-id,Values=$$VPC_ID \
 	      --query 'NetworkInterfaces[].{Id:NetworkInterfaceId,Att:Attachment.AttachmentId}' \
 	      --output text 2>/dev/null); do \
 	    set -- $$eni; ENI=$$1; ATT=$$2; \
 	    if [ "$$ATT" != "None" ] && [ -n "$$ATT" ]; then \
-	      aws ec2 detach-network-interface --region $$REGION --attachment-id $$ATT >/dev/null 2>&1 || true; \
+	      aws ec2 detach-network-interface --region $$REGION --attachment-id "$$ATT" >/dev/null 2>&1 || true; \
 	    fi; \
-	    aws ec2 delete-network-interface --region $$REGION --network-interface-id $$ENI >/dev/null 2>&1 || true; \
-	  done
+	    aws ec2 delete-network-interface --region $$REGION --network-interface-id "$$ENI" >/dev/null 2>&1 || true; \
+	  done; \
+	\
+	# 3) nuke non-default Security Groups (ALB/EKS leftovers)
+	-@for sg in $$(aws ec2 describe-security-groups --region $$REGION \
+	      --filters Name=vpc-id,Values=$$VPC_ID \
+	      --query "SecurityGroups[?GroupName!='default'].GroupId" \
+	      --output text 2>/dev/null); do \
+	    ING=$$(aws ec2 describe-security-groups --region $$REGION --group-ids $$sg \
+	          --query 'SecurityGroups[0].IpPermissions' --output json 2>/dev/null); \
+	    [ "$$ING" != "[]" ] && aws ec2 revoke-security-group-ingress --region $$REGION --group-id $$sg --ip-permissions "$$ING" >/dev/null 2>&1 || true; \
+	    EGR=$$(aws ec2 describe-security-groups --region $$REGION --group-ids $$sg \
+	          --query 'SecurityGroups[0].IpPermissionsEgress' --output json 2>/dev/null); \
+	    [ "$$EGR" != "[]" ] && aws ec2 revoke-security-group-egress --region $$REGION --group-id $$sg --ip-permissions "$$EGR" >/dev/null 2>&1 || true; \
+	    aws ec2 delete-security-group --region $$REGION --group-id $$sg >/dev/null 2>&1 || true; \
+	  done; \
+	\
+	# 4) delete VPC Endpoints (if any)
+	-@EP=$$(aws ec2 describe-vpc-endpoints --region $$REGION --filters Name=vpc-id,Values=$$VPC_ID \
+	     --query 'VpcEndpoints[].VpcEndpointId' --output text 2>/dev/null); \
+	[ -n "$$EP" ] && aws ec2 delete-vpc-endpoints --region $$REGION --vpc-endpoint-ids $$EP >/dev/null 2>&1 || true; \
+	\
+	# 5) delete NAT GWs, then detach+delete IGW (if present)
+	-@for ngw in $$(aws ec2 describe-nat-gateways --region $$REGION --filter Name=vpc-id,Values=$$VPC_ID \
+	      --query 'NatGateways[].NatGatewayId' --output text 2>/dev/null); do \
+	    aws ec2 delete-nat-gateway --region $$REGION --nat-gateway-id $$ngw >/dev/null 2>&1 || true; \
+	  done; \
+	-@IGW=$$(aws ec2 describe-internet-gateways --region $$REGION --filters Name=attachment.vpc-id,Values=$$VPC_ID \
+	      --query 'InternetGateways[].InternetGatewayId' --output text 2>/dev/null); \
+	[ -n "$$IGW" ] && aws ec2 detach-internet-gateway --region $$REGION --internet-gateway-id $$IGW --vpc-id $$VPC_ID >/dev/null 2>&1 || true; \
+	[ -n "$$IGW" ] && aws ec2 delete-internet-gateway --region $$REGION --internet-gateway-id $$IGW >/dev/null 2>&1 || true; \
+	\
+	# 6) ensure DHCP options are default (rare blocker)
+	-@DHCP=$$(aws ec2 describe-vpcs --region $$REGION --vpc-ids $$VPC_ID --query 'Vpcs[0].DhcpOptionsId' --output text 2>/dev/null); \
+	[ "$$DHCP" != "default" ] && aws ec2 associate-dhcp-options --region $$REGION --dhcp-options-id default --vpc-id $$VPC_ID >/dev/null 2>&1 || true
 
 # Confirms IP to use for EKS API access and saves to .make_env_public_access
 _confirm_ip:
@@ -138,7 +179,7 @@ destroy: _guard_tfvars
 	$(MAKE) _force_k8s_purge
 	$(MAKE) _state_rm_k8s
 	@TF_LOG=DEBUG TF_LOG_PATH=./tf.log \
-	  $(TF) destroy -var-file=$(TFVARS) -refresh=false -lock-timeout=5m
+	  $(TF) destroy -var-file=$(TFVARS) -refresh=true -lock-timeout=5m
 
 # Validates Terraform configuration syntax at root
 validate:
