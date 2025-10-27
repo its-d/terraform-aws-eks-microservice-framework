@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+variable "region" {
+  type        = string
+  description = "AWS Region to be associated with the deployment."
+  default     = "us-east-1"
+}
+
 variable "common_tags" {
   type        = map(string)
   description = "A map of common tags to apply to all resources."

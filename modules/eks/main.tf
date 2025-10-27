@@ -89,27 +89,56 @@ resource "aws_eks_fargate_profile" "fargate_profile" {
 * Variables required: None
 ----------------------------
 */
-resource "aws_eks_addon" "coredns" {
-  cluster_name = aws_eks_cluster.eks_cluster.name
-  addon_name   = "coredns"
-
-  resolve_conflicts_on_create = "OVERWRITE"
-  resolve_conflicts_on_update = "OVERWRITE"
-
-  configuration_values = jsonencode({
-    nodeSelector = {
-      "eks.amazonaws.com/compute-type" = "fargate"
-    }
-    tolerations = [{
-      key      = "eks.amazonaws.com/compute-type"
-      operator = "Equal"
-      value    = "fargate"
-      effect   = "NoSchedule"
-    }]
-  })
+resource "null_resource" "patch_coredns_fargate" {
+  # Re-run if the endpoint changes (fresh cluster)
+  triggers = {
+    cluster_endpoint = aws_eks_cluster.eks_cluster.endpoint
+  }
 
   depends_on = [
     aws_eks_cluster.eks_cluster,
     aws_eks_fargate_profile.fargate_profile
   ]
+
+  provisioner "local-exec" {
+    command = <<-EOC
+      set -euo pipefail
+
+      CLUSTER="${aws_eks_cluster.eks_cluster.name}"
+      REGION="${var.region}"
+
+      # 1) Wait until control plane is actually active
+      aws eks wait cluster-active --name "$CLUSTER" --region "$REGION"
+
+      # 2) Refresh kubeconfig and prove we can talk to API (retry a few times for DNS/propagation)
+      for i in 1 2 3 4 5; do
+        aws eks update-kubeconfig --name "$CLUSTER" --region "$REGION" >/dev/null 2>&1 || true
+        if kubectl --request-timeout=10s get ns kube-system >/dev/null 2>&1; then
+          break
+        fi
+        sleep 8
+      done
+
+      # 3) Patch CoreDNS to run on Fargate, then ensure it rolls out
+      kubectl -n kube-system patch deployment coredns \
+        -p '{
+          "spec": {
+            "template": {
+              "spec": {
+                "nodeSelector": {"eks.amazonaws.com/compute-type":"fargate"},
+                "tolerations": [{
+                  "key":"eks.amazonaws.com/compute-type",
+                  "operator":"Equal",
+                  "value":"fargate",
+                  "effect":"NoSchedule"
+                }]
+              }
+            }
+          }
+        }' || true
+
+      kubectl -n kube-system rollout restart deploy/coredns || true
+      kubectl -n kube-system rollout status deploy/coredns --timeout=180s || true
+    EOC
+  }
 }

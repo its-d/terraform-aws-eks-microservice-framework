@@ -218,7 +218,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env_dir: [dev]
+        env_dir: [dev] # Add other directories if you want additional validation
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
@@ -241,7 +241,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env_dir: [dev]
+        env_dir: [dev] # Add other directories if you want additional validation
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3

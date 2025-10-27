@@ -73,15 +73,11 @@ key            = "terraform-aws-eks-microservice-framework/ENV/terraform.tfstate
 region         = "us-east-1"
 encrypt        = true
 dynamodb_table = "my-terraform-state-locks"
-acl            = "private"
-role_arn       = "arn:aws:iam::123456789012:role/CI-Terraform-Role" # optional
 ```
 
 Usage:
 ```bash
-terraform init -backend-config=backend.hcl
-# or
-make init ENV=dev
+make init
 ```
 
 ---
@@ -94,11 +90,11 @@ make init ENV=dev
    - `cp terraform.tfvars.example env/dev/terraform.tfvars`
    - Edit `env/dev/terraform.tfvars` (see "env tfvars" below)
 3. Confirm your public IP with the repository helper (REQUIRED — see "_confirm_ip"):
-   - `make _confirm_ip ENV=dev`
+   - `make _confirm_ip`
    - This ensures `public_access_cidrs` in your environment tfvars is set to the IP that should be permitted to access the EKS API (prevents accidentally opening public access).
 4. Ensure you have the minimum toolchain installed (Terraform, AWS CLI, kubectl, Helm, Python + pre-commit).
-5. Run: `make init ENV=dev` (or `terraform init -backend-config=backend.hcl`) and ensure init succeeds.
-6. Run: `make plan ENV=dev` then `make apply ENV=dev`.
+5. Run: `make init` (or `terraform init -backend-config=backend.hcl`) and ensure init succeeds.
+6. Run: `make plan` then `make apply`.
 
 Tip: Use a feature branch and open a PR so CI validates formatting and terraform validation before merging to main.
 
@@ -112,14 +108,13 @@ or timeout errors even though the cluster exists.
 
 **Set your IP safely:**
 ```bash
-make _confirm_ip ENV=dev
+make _confirm_ip
 ```
 This command detects your current public IPv4 address and injects it into your environment
 tfvars file:
 
 ```hcl
 public_access_cidrs = ["<your-ip>/32"]
-endpoint_public_access = true
 ```
 
 **Why it’s required**
@@ -145,7 +140,7 @@ endpoint_public_access = true
 ## _confirm_ip — confirm your IP before planning/deploying (REQUIRED)
 
 Why this exists
-- By default the repo can enable public access to the EKS API (controlled by `endpoint_public_access` / `public_access_cidrs` TF variables). To protect the cluster and reduce mistakes when people run the plan/apply, we require a short confirmation step that captures and/or validates your public IP and writes it into the environment tfvars (or instructs you how to do it).
+- By default the repo can enable public access to the EKS API (controlled by `public_access_cidrs` TF variables). To protect the cluster and reduce mistakes when people run the plan/apply, we require a short confirmation step that captures and/or validates your public IP and writes it into the environment tfvars (or instructs you how to do it).
 - Running `_confirm_ip` prevents accidental wide-open public access and ensures the Terraform plan uses the intended CIDR (your office/home IP) for API access.
 
 What `make _confirm_ip` does (recommended implementation behavior)
@@ -153,7 +148,6 @@ What `make _confirm_ip` does (recommended implementation behavior)
 - Prints the detected IP and asks you to confirm ("Is this the correct IP to allow? (Y/n)").
 - On yes:
   - It updates `env/$(ENV)/terraform.tfvars` (or creates it from example) to set `public_access_cidrs = ["<your_ip>/32"]` (or updates equivalent field).
-  - It optionally sets `endpoint_public_access = true` (only if you choose to).
 - On no:
   - It prints instructions and a single command you can run to set the desired CIDR manually.
   - It aborts without touching your tfvars so you can take manual action.
@@ -162,14 +156,13 @@ How to run
 - Example (for dev environment):
 ```bash
 # detect / confirm your IP and update env/dev/terraform.tfvars
-make _confirm_ip ENV=dev
+make _confirm_ip
 ```
 
 Manual fallback
 - If you prefer to edit manually, open `env/dev/terraform.tfvars` and set:
 ```hcl
 public_access_cidrs = ["203.0.113.45/32"]  # replace with your confirmed IP/CIDR
-endpoint_public_access = true
 ```
 
 Security notes
@@ -190,8 +183,6 @@ Minimum fields (from terraform.tfvars.example and module variables):
 - `environment` — environment name (e.g., "dev")
 - `owner` — owner tag / contact
 - `identifier` — short prefix for resource names
-- `endpoint_private_access` — true/false
-- `endpoint_public_access` — true/false
 - `public_access_cidrs` — list of CIDRs allowed for public API access
 - `grafana_admin_user` — Grafana admin username
 - `grafana_admin_password` — Grafana admin password (sensitive)
@@ -250,11 +241,11 @@ Grafana access
 - `main.tf` — root orchestration of modules
 - `variables.tf` — global inputs
 - `output.tf` — exported outputs
-- `backend.tf` — remote state backend config placeholder
 - `alb_controller.tf` — AWS Load Balancer Controller Helm configuration
 - `Makefile` — convenience workflow targets (init, plan, apply, destroy, etc.)
 - `modules/*` — VPC, EKS, IAM, storage, Grafana, app, etc.
 - `env/<env>/terraform.tfvars` — environment-specific variables (create these)
+- `env/<env>/backend.hcl` - environment-specific backend configuration (create this)
 - `docs/*` — architecture, contributing, troubleshooting
 - `.github/workflows/ci.yml` — CI pipeline (pre-commit, terraform validate, plan artifacts)
 
@@ -266,13 +257,13 @@ High-level targets (see Makefile for exact behavior):
 
 - `init`
   - Initializes Terraform in root and each module: `terraform init -upgrade`
-  - Use after cloning & creating `backend.hcl` and `env/*/terraform.tfvars`.
-  - Example: `make init ENV=dev`
+  - Use after cloning & creating `env/*/backend.hcl` and `env/*/terraform.tfvars`.
+  - Example: `make init`
 
 - `plan`
   - Runs `terraform plan -var-file=env/$(ENV)/terraform.tfvars -out=plan-$(ENV).tfplan`
   - Guard: fails if TFVARS missing.
-  - Example: `make plan ENV=dev`
+  - Example: `make plan`
 
 - `apply`
   - Applies the previously created plan file: `terraform apply "plan-$(ENV).tfplan"`
@@ -309,7 +300,7 @@ Recommended destroy ordering:
 1. Ensure application workloads, Helm releases, or GitOps-managed resources are removed from the cluster (use your deployment tooling or Helm/GitOps processes).
 2. Remove Grafana Helm release or application Helm charts so PVCs unmount.
 3. Wait for pods, PVCs, and ENIs to be removed (verify in the AWS Console and/or Kubernetes dashboard).
-4. Run `make destroy ENV=dev`. If Terraform still errors, inspect state and remove blocking resources cautiously.
+4. Run `make destroy`. If Terraform still errors, inspect state and remove blocking resources cautiously.
 
 Notes:
 - The Makefile intentionally does not perform destructive in-cluster deletions because that requires kubeconfig and is often organization-specific. Use your standard application lifecycle tooling to remove in-cluster resources before running Terraform destroy.
@@ -326,34 +317,58 @@ Typical flow (from a fresh machine)
 git clone https://github.com/its-d/terraform-aws-eks-microservice-framework.git
 cd terraform-aws-eks-microservice-framework
 ```
+2. Configure Virtual Environment
+```bash
+# Create Virtual Environment
+python3 -m venv .venv
 
-2. Create `backend.hcl` locally (example above), do NOT commit it.
+# Enter/Use the Virtual Environment
+source .venv/bin/activate
 
-3. Create environment tfvars:
+# Install packages
+pip install -r requirements.txt
+```
+
+3. Set your AWS_PROFILE/Credentials
+```bash
+export AWS_PROFILE=<PROFILE_NAME>
+```
+
+5. Create env folder 
 ```bash
 mkdir -p env/dev
+```
+
+6. Create `backend.hcl` locally (example above), do NOT commit it.
+```bash
+cp backend.hcl.example env/dev/backend.hcl
+# Edit env/dev/backend.hcl - populate required fields (see section above)
+```
+
+7. Create environment tfvars:
+```bash
 cp terraform.tfvars.example env/dev/terraform.tfvars
-# Edit env/dev/terraform.tfvars and populate required fields (see section above)
+# Edit env/dev/terraform.tfvars - populate required fields (see section above)
 ```
 
-4. Confirm your IP (REQUIRED)
+8. Confirm your IP (REQUIRED)
 ```bash
-make _confirm_ip ENV=dev
+make _confirm_ip
 ```
 
-5. Initialize Terraform:
+9. Initialize Terraform:
 ```bash
-make init ENV=dev
+make init
 ```
 
-6. Plan:
+10. Plan:
 ```bash
-make plan ENV=dev
+make plan
 ```
 
-7. Apply:
+11. Apply:
 ```bash
-make apply ENV=dev
+make apply
 ```
 
 After apply
