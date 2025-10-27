@@ -109,6 +109,7 @@ resource "null_resource" "patch_coredns_fargate" {
 
       # 1) Wait until control plane is actually active
       aws eks wait cluster-active --name "$CLUSTER" --region "$REGION"
+      aws eks wait fargate-profile-active --cluster-name "$CLUSTER" --name "${var.identifier}-fargate-profile" --region "$REGION"
 
       # 2) Refresh kubeconfig and prove we can talk to API (retry a few times for DNS/propagation)
       for i in 1 2 3 4 5; do
@@ -119,7 +120,13 @@ resource "null_resource" "patch_coredns_fargate" {
         sleep 8
       done
 
-      # 3) Patch CoreDNS to run on Fargate, then ensure it rolls out
+      # 3) Wait for the CoreDNS Deployment to exist (fresh clusters can lag)
+      for i in 1 2 3 4 5 6; do
+        kubectl -n kube-system get deploy coredns >/dev/null 2>&1 && break
+        sleep 10
+      done
+
+      # 4) Patch CoreDNS to run on Fargate, then ensure it rolls out
       kubectl -n kube-system patch deployment coredns \
         -p '{
           "spec": {
@@ -138,7 +145,7 @@ resource "null_resource" "patch_coredns_fargate" {
         }' || true
 
       kubectl -n kube-system rollout restart deploy/coredns || true
-      kubectl -n kube-system rollout status deploy/coredns --timeout=180s || true
+      kubectl -n kube-system rollout status deploy/coredns --timeout=360s || true
     EOC
   }
 }
