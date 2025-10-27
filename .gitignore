@@ -17,6 +17,7 @@ terraform.tfplan
 terraform.rc
 *.tfplan
 .make_env_public_access
+.last_vpc_id
 
 # --- PYTHON (if using helper scripts) ---
 __pycache__/

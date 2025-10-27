@@ -12,63 +12,6 @@ A modular, production-ready Terraform framework for deploying Amazon EKS and run
 
 ---
 
-## Quick first-time checklist (do these before running apply)
-1. Create remote state artifacts (S3 bucket + DynamoDB table) or have a backend.hcl ready:
-   - S3 bucket (private) for Terraform state
-   - DynamoDB table with partition key "LockID" for state locking (recommended)
-2. Copy example tfvars and populate required fields:
-   - `cp terraform.tfvars.example env/dev/terraform.tfvars`
-   - Edit `env/dev/terraform.tfvars` (see "env tfvars" below)
-3. Confirm your public IP with the repository helper (REQUIRED — see "_confirm_ip" below):
-   - `make _confirm_ip ENV=dev`
-   - This ensures `public_access_cidrs` (or equivalent) in your environment tfvars is set to the IP that should be permitted to access the EKS API (prevents accidentally opening public access).
-4. Ensure you have the minimum toolchain installed (Terraform, AWS CLI, kubectl, Helm, Python + pre-commit).
-5. Run: `make init ENV=dev` (or `terraform init -backend-config=backend.hcl`) and ensure init succeeds.
-6. Run: `make plan ENV=dev` then `make apply ENV=dev`.
-
-Tip: Use a feature branch and open a PR so CI validates formatting and terraform validation before merging to main.
-
----
-
-## _confirm_ip — confirm your IP before planning/deploying (REQUIRED)
-
-Why this exists
-- By default the repo can enable public access to the EKS API (controlled by `endpoint_public_access` / `public_access_cidrs` TF variables). To protect the cluster and reduce mistakes when people run the plan/apply, we require a short confirmation step that captures and/or validates your public IP and writes it into the environment tfvars (or instructs you how to do it).
-- Running `_confirm_ip` prevents accidental wide-open public access and ensures the Terraform plan uses the intended CIDR (your office/home IP) for API access.
-
-What `make _confirm_ip` does (recommended implementation behavior)
-- Detects your current public IPv4 address using a safe external service (e.g., `https://ifconfig.co` or `https://checkip.amazonaws.com`).
-- Prints the detected IP and asks you to confirm ("Is this the correct IP to allow? (Y/n)").
-- On yes:
-  - It updates `env/$(ENV)/terraform.tfvars` (or creates it from example) to set `public_access_cidrs = ["<your_ip>/32"]` (or updates equivalent field).
-  - It optionally sets `endpoint_public_access = true` (only if you choose to).
-- On no:
-  - It prints instructions and a single command you can run to set the desired CIDR manually.
-  - It aborts without touching your tfvars so you can take manual action.
-
-How to run
-- Example (for dev environment):
-```bash
-# detect / confirm your IP and update env/dev/terraform.tfvars
-make _confirm_ip ENV=dev
-```
-
-Manual fallback
-- If you prefer to edit manually, open `env/dev/terraform.tfvars` and set:
-```hcl
-public_access_cidrs = ["203.0.113.45/32"]  # replace with your confirmed IP/CIDR
-endpoint_public_access = true
-```
-
-Security notes
-- Confirming your IP reduces accidental exposure, but do not rely on IP-based access as your only control. Use IAM, RBAC, and private endpoints where appropriate.
-- If you have a dynamic IP (e.g., home ISP), prefer using a VPN, bastion host, or private API endpoint instead of opening a public CIDR to the cluster.
-
-Enforcement guidance
-- We recommend treating `_confirm_ip` as mandatory in your onboarding checklist and adding a CI/PR checklist item that the contributor ran it locally before creating a plan PR.
-
----
-
 ## ⚙️ Prerequisites (fresh machine)
 
 Minimum recommended (tested): Terraform >= 1.6 (CI pins 1.9.x — see CI workflow), AWS CLI v2, Helm >= 3.8, kubectl matching EKS control plane, Python >= 3.10.
@@ -84,7 +27,7 @@ Recommended packages (install on a fresh machine):
 - Docker Desktop (macOS/Windows) or docker-ce (Linux) — optional for building images
 - Terraform CLI (>= 1.6)
 - AWS CLI v2
-- kubectl
+- kubectl (useful for manual inspection; not required for standard Makefile-driven deploy)
 - eksctl (optional; useful for some dev workflows)
 - Helm (>= 3.8)
 - Python 3.10+ and pip
@@ -119,66 +62,6 @@ Windows
 
 ---
 
-## 🔐 AWS account and credentials
-
-- Configure credentials:
-  - `aws configure --profile <profile>` or set environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, AWS_DEFAULT_REGION.
-- Required permissions (high-level):
-  - Create IAM roles/policies, EKS clusters, VPC resources, EC2 ENIs, ELB/ALB resources, EFS resources (if Terraform will create them), S3/DynamoDB for state.
-
-Security note: Do not put secrets in git. See "Secrets & Sensitive Values" below for recommended patterns.
-
----
-
-## 🗂 Repository structure (relevant parts)
-
-- `main.tf` — root orchestration of modules
-- `variables.tf` — global inputs
-- `output.tf` — exported outputs
-- `backend.tf` — remote state backend config placeholder
-- `alb_controller.tf` — AWS Load Balancer Controller Helm configuration
-- `Makefile` — convenience workflow targets (init, plan, apply, destroy, etc.)
-- `modules/*` — VPC, EKS, IAM, storage, Grafana, app, etc.
-- `env/<env>/terraform.tfvars` — environment-specific variables (create these)
-- `k8s/` — (optional) Kubernetes manifests (if provided in the repo)
-- `docs/*` — architecture, contributing, troubleshooting
-- `.github/workflows/ci.yml` — CI pipeline (pre-commit, terraform validate, plan artifacts)
-
-Note: k8s manifests are optional. If your repo does not include any sample k8s manifests, you can skip any kubectl-related steps below — they are only relevant if you add manifests to the `k8s/` folder.
-
----
-
-## 📌 Grafana (ready-to-use) with EFS — primary feature
-
-This repository includes a Grafana deployment wired to persistent storage managed by the storage module (EFS) and exposed to Grafana via PersistentVolume/PersistentVolumeClaim.
-
-Important behavioral note (default flow)
-- The `modules/storage` module creates the EFS file system, mount targets, and access point when deployed. The root `main.tf` instantiates `module.storage` and passes its outputs to `module.grafana`.
-- Do NOT set `efs_file_system_id` or `efs_access_point_id` in `env/<env>/terraform.tfvars` for the default workflow — these IDs are produced by Terraform and exposed as module outputs.
-- If you intentionally want to reuse an external EFS created outside this repo, that is an advanced workflow: you must update module usage or supply optional variables to accept external IDs. (The current default wiring uses `module.storage` to create EFS.)
-
-What is created (when storage is enabled)
-- `aws_efs_file_system`
-- `aws_efs_access_point`
-- `aws_efs_mount_target` in required subnets
-- security group(s) to allow NFS (TCP/2049) from the cluster ENIs
-
-How to confirm (after apply)
-```bash
-terraform output efs_file_system_id
-terraform output efs_access_point_id
-terraform output -json | jq .
-# or inspect state
-terraform state list | grep -i efs || true
-```
-
-Grafana access
-- After apply, retrieve the Grafana service/endpoint:
-  - `kubectl get svc -n monitoring` (service type depends on helm values; often ClusterIP with an ingress or LoadBalancer via AWS Load Balancer Controller)
-  - Or inspect Terraform outputs (if the grafana module exposes an output for the URL)
-
----
-
 ## 🔧 First-time backend / bootstrap (recommended)
 
 You can create the backend resources manually or with a small helper. Example Terraform snippet to create a state S3 bucket & DynamoDB table (run in a separate one-off bootstrap workspace) can live in `scripts/bootstrap-backend.example.tf` (suggestion). If you prefer commands, create the S3 bucket and DynamoDB table via AWS console / CLI.
@@ -203,6 +86,101 @@ make init ENV=dev
 
 ---
 
+## Quick first-time checklist (do these before running apply)
+1. Create remote state artifacts (S3 bucket + DynamoDB table) or have a backend.hcl ready:
+   - S3 bucket (private) for Terraform state
+   - DynamoDB table with partition key "LockID" for state locking (recommended)
+2. Copy example tfvars and populate required fields:
+   - `cp terraform.tfvars.example env/dev/terraform.tfvars`
+   - Edit `env/dev/terraform.tfvars` (see "env tfvars" below)
+3. Confirm your public IP with the repository helper (REQUIRED — see "_confirm_ip"):
+   - `make _confirm_ip ENV=dev`
+   - This ensures `public_access_cidrs` in your environment tfvars is set to the IP that should be permitted to access the EKS API (prevents accidentally opening public access).
+4. Ensure you have the minimum toolchain installed (Terraform, AWS CLI, kubectl, Helm, Python + pre-commit).
+5. Run: `make init ENV=dev` (or `terraform init -backend-config=backend.hcl`) and ensure init succeeds.
+6. Run: `make plan ENV=dev` then `make apply ENV=dev`.
+
+Tip: Use a feature branch and open a PR so CI validates formatting and terraform validation before merging to main.
+
+---
+
+## 🔒 EKS API Access — Why IP Configuration Matters
+
+Terraform (and Helm) must reach the EKS API endpoint during `apply`.
+If your public IP is not listed in `public_access_cidrs`, you’ll see TLS handshake
+or timeout errors even though the cluster exists.
+
+**Set your IP safely:**
+```bash
+make _confirm_ip ENV=dev
+```
+This command detects your current public IPv4 address and injects it into your environment
+tfvars file:
+
+```hcl
+public_access_cidrs = ["<your-ip>/32"]
+endpoint_public_access = true
+```
+
+**Why it’s required**
+- Prevents failed `kubectl` or `helm` calls that depend on API access.
+- Avoids accidentally exposing the cluster to the internet (`0.0.0.0/0`).
+- Keeps your deployments reproducible when switching networks or VPNs.
+
+**If skipped**
+- `terraform apply` may hang or fail with:
+  ```
+  could not get current server API group list:
+  net/http: TLS handshake timeout
+  ```
+- Helm charts and Kubernetes resources will not deploy.
+- Destroy operations may partially complete and leave residual resources.
+
+**In automation**
+- Once you move apply into CI/CD (inside AWS or GitOps), you can disable public access entirely
+  and remove the `_confirm_ip` step.
+
+---
+
+## _confirm_ip — confirm your IP before planning/deploying (REQUIRED)
+
+Why this exists
+- By default the repo can enable public access to the EKS API (controlled by `endpoint_public_access` / `public_access_cidrs` TF variables). To protect the cluster and reduce mistakes when people run the plan/apply, we require a short confirmation step that captures and/or validates your public IP and writes it into the environment tfvars (or instructs you how to do it).
+- Running `_confirm_ip` prevents accidental wide-open public access and ensures the Terraform plan uses the intended CIDR (your office/home IP) for API access.
+
+What `make _confirm_ip` does (recommended implementation behavior)
+- Detects your current public IPv4 address using a safe external service (e.g., `https://checkip.amazonaws.com`).
+- Prints the detected IP and asks you to confirm ("Is this the correct IP to allow? (Y/n)").
+- On yes:
+  - It updates `env/$(ENV)/terraform.tfvars` (or creates it from example) to set `public_access_cidrs = ["<your_ip>/32"]` (or updates equivalent field).
+  - It optionally sets `endpoint_public_access = true` (only if you choose to).
+- On no:
+  - It prints instructions and a single command you can run to set the desired CIDR manually.
+  - It aborts without touching your tfvars so you can take manual action.
+
+How to run
+- Example (for dev environment):
+```bash
+# detect / confirm your IP and update env/dev/terraform.tfvars
+make _confirm_ip ENV=dev
+```
+
+Manual fallback
+- If you prefer to edit manually, open `env/dev/terraform.tfvars` and set:
+```hcl
+public_access_cidrs = ["203.0.113.45/32"]  # replace with your confirmed IP/CIDR
+endpoint_public_access = true
+```
+
+Security notes
+- Confirming your IP reduces accidental exposure, but do not rely on IP-based access as your only control. Use IAM, RBAC, and private endpoints where appropriate.
+- If you have a dynamic IP (e.g., home ISP), prefer using a VPN, bastion host, or private API endpoint instead of opening a public CIDR to the cluster.
+
+Enforcement guidance
+- We recommend treating `_confirm_ip` as mandatory in your onboarding checklist and adding a CI/PR checklist item that the contributor ran it locally before creating a plan PR.
+
+---
+
 ## 🧾 Environment tfvars — location and required fields
 
 The Makefile expects `env/$(ENV)/terraform.tfvars`. Copy `terraform.tfvars.example` to `env/dev/terraform.tfvars` and populate the values.
@@ -219,7 +197,7 @@ Minimum fields (from terraform.tfvars.example and module variables):
 - `grafana_admin_password` — Grafana admin password (sensitive)
 
 Note about EFS:
-- Do NOT set `efs_file_system_id` or `efs_access_point_id` in `env` tfvars for the default behavior. The storage module creates EFS and the root module wires its outputs into grafana. If you intend to reuse an externally-managed EFS, you must explicitly configure that advanced flow.
+- Do NOT set `efs_file_system_id` or `efs_access_point_id` in `env` tfvars for the default behavior. The storage module creates EFS and the root module wires its outputs into grafana.
 
 Other possible inputs you may need depending on your usage:
 - `private_subnet_ids` — if using existing subnets
@@ -233,6 +211,52 @@ Secrets & recommended pattern
 - For production / public usage, store sensitive values (Grafana admin password, etc.) in SSM Parameter Store or Secrets Manager and reference them in Terraform (or inject them via CI secrets). Example pattern:
   - Put secret into SSM: `aws ssm put-parameter --name "/project/dev/grafana_admin_password" --type "SecureString" --value "<SECRET>"`
   - Refer to SSM via Terraform data source `aws_ssm_parameter` with `with_decryption = true`.
+
+---
+
+## 📌 Grafana (ready-to-use) with EFS — primary feature
+
+This repository includes a Grafana deployment wired to persistent storage managed by the storage module (EFS) and exposed to Grafana via PersistentVolume/PersistentVolumeClaim.
+
+Important behavioral note (default flow)
+- The `modules/storage` module creates the EFS file system, mount targets, and access point when deployed. The root `main.tf` instantiates `module.storage` and passes its outputs to `module.grafana`.
+- Do NOT set `efs_file_system_id` or `efs_access_point_id` in `env/<env>/terraform.tfvars` for the default workflow — these IDs are produced by Terraform and exposed as module outputs.
+- If you intentionally want to reuse an external EFS created outside this repo, that is an advanced workflow: you must update module usage or supply optional variables to accept external IDs.
+
+What is created (when storage is enabled)
+- `aws_efs_file_system`
+- `aws_efs_access_point`
+- `aws_efs_mount_target` in required subnets
+- security group(s) to allow NFS (TCP/2049) from the cluster ENIs
+
+How to confirm (after apply)
+```bash
+terraform output efs_file_system_id
+terraform output efs_access_point_id
+terraform output -json | jq .
+# or inspect state
+terraform state list | grep -i efs || true
+```
+
+Grafana access
+- After apply, retrieve Grafana information using the Makefile convenience targets or Terraform outputs:
+  - `make outputs` (recommended — prints cluster and EFS outputs if available)
+- The repository intentionally avoids baking manual kubectl instructions into the standard deploy path — the platform deploys via Terraform (init/plan/apply) and application manifests should be managed by CI/GitOps or developer workflows outside of this Makefile-driven infra flow.
+
+---
+
+## 🗂 Repository structure (relevant parts)
+
+- `main.tf` — root orchestration of modules
+- `variables.tf` — global inputs
+- `output.tf` — exported outputs
+- `backend.tf` — remote state backend config placeholder
+- `alb_controller.tf` — AWS Load Balancer Controller Helm configuration
+- `Makefile` — convenience workflow targets (init, plan, apply, destroy, etc.)
+- `modules/*` — VPC, EKS, IAM, storage, Grafana, app, etc.
+- `env/<env>/terraform.tfvars` — environment-specific variables (create these)
+- `docs/*` — architecture, contributing, troubleshooting
+- `.github/workflows/ci.yml` — CI pipeline (pre-commit, terraform validate, plan artifacts)
 
 ---
 
@@ -255,9 +279,12 @@ High-level targets (see Makefile for exact behavior):
 
 - `destroy`
   - Runs `terraform destroy -var-file=env/$(ENV)/terraform.tfvars`
-  - IMPORTANT: follow the resource removal ordering below to avoid "resource in use" errors.
+  - IMPORTANT: remove or ensure in-cluster resources (Helm releases, GitOps-managed resources, application workloads) are torn down before running destroy to avoid "resource in use" errors.
 
 - `validate`, `fmt`, `lint`, `docs`, `clean`, `help` — helper/quality targets (run `pre-commit`, `terraform fmt`, `terraform validate`, and generate module docs).
+
+- `grafana-url`
+  - Gets the Grafana endpoint URL (if the Makefile/terraform outputs are configured to provide it)
 
 Recommended additions (suggested changes you can add to the Makefile)
 - `make outputs` — convenience target to show key outputs:
@@ -270,7 +297,7 @@ outputs:
 
 ---
 
-## ⚠️ Why delete Kubernetes resources (and ENIs) before `terraform destroy`
+## ⚠️ Why ensure in-cluster resources are removed before `terraform destroy`
 
 Terraform destroy can fail with "resource in use" when cloud resources (ENIs, target groups, PVC mounts) are still attached by Kubernetes controllers or pods.
 
@@ -279,39 +306,21 @@ Why:
 - Fargate pods mount ENIs. EFS mounts (via PVCs) remain until pods unmount PVCs. AWS blocks deletion of VPC/subnets/SGs/resources while attachments exist.
 
 Recommended destroy ordering:
-1. Delete application Kubernetes resources (Services, Ingresses, Deployments) so controllers detach and remove cloud resources:
-```bash
-kubectl delete -f k8s/service-yourapp.yaml   # if you have k8s manifests
-kubectl delete -f k8s/deployment-yourapp.yaml
-# remove load balancer controller if required:
-kubectl -n kube-system delete deploy aws-load-balancer-controller
-```
-2. Remove Grafana so PVCs unmount:
-```bash
-kubectl -n monitoring delete deploy grafana
-helm -n monitoring uninstall grafana  # if installed by Helm
-```
-3. Wait for pods, PVCs, and ENIs to be removed:
-```bash
-kubectl get pods -A
-kubectl get pvc -n monitoring
-# In AWS console: EC2 -> Network Interfaces; ELB -> Target Groups
-```
-4. Run `make destroy ENV=dev`. If Terraform still errors:
-```bash
-terraform state list
-# investigate blocking resource addresses
-terraform state rm <address> # last resort
-terraform destroy -auto-approve
-```
+1. Ensure application workloads, Helm releases, or GitOps-managed resources are removed from the cluster (use your deployment tooling or Helm/GitOps processes).
+2. Remove Grafana Helm release or application Helm charts so PVCs unmount.
+3. Wait for pods, PVCs, and ENIs to be removed (verify in the AWS Console and/or Kubernetes dashboard).
+4. Run `make destroy ENV=dev`. If Terraform still errors, inspect state and remove blocking resources cautiously.
 
 Notes:
-- The Makefile does not automatically delete K8s resources because that requires kubeconfig and is destructive. Manual deletion gives you control and prevents accidental data loss.
+- The Makefile intentionally does not perform destructive in-cluster deletions because that requires kubeconfig and is often organization-specific. Use your standard application lifecycle tooling to remove in-cluster resources before running Terraform destroy.
 
 ---
 
-## 🧪 Full deploy (from fresh machine)
+## 🧪 Deploying with the Makefile (replaces earlier manual deploy guidance)
 
+This repository uses the Makefile workflow for the recommended deploy steps. The Makefile drives Terraform init/plan/apply and other convenience tasks so you do not need to run ad-hoc kubectl/helm commands as part of the standard infra deploy.
+
+Typical flow (from a fresh machine)
 1. Clone:
 ```bash
 git clone https://github.com/its-d/terraform-aws-eks-microservice-framework.git
@@ -334,8 +343,6 @@ make _confirm_ip ENV=dev
 
 5. Initialize Terraform:
 ```bash
-terraform init -backend-config=backend.hcl
-# or
 make init ENV=dev
 ```
 
@@ -349,23 +356,11 @@ make plan ENV=dev
 make apply ENV=dev
 ```
 
-8. Configure kubectl:
-```bash
-aws eks update-kubeconfig --name <cluster_name_from_outputs> --region <region>
-# Use terraform output to find cluster name:
-terraform output cluster_name
-```
+After apply
+- Use `make outputs` (if available in the Makefile) to retrieve important values such as the cluster name, EFS ID's (Grafana Endpoint is located within Load Balancer Service in the AWS Console).
+- If your team manages application manifests (Helm, GitOps), apply them through your standard CI/GitOps pipeline rather than including them in the infra Makefile.
 
-9. Optional — deploy local Kubernetes manifests (only if you include k8s/ manifests)
-- If your repo includes manifests in `k8s/`, deploy them with:
-```bash
-kubectl apply -f k8s/
-```
-- If no `k8s/` folder or manifests are present, skip this step.
-
-10. Grafana access:
-- After apply, get Grafana service/endpoint via `kubectl get svc -n monitoring` or from Terraform outputs if the grafana module exposes them (recommended).
-- Grafana is backed by the EFS created by the storage module (when enabled), so dashboards persist across pod restarts.
+This Makefile-driven flow avoids embedding ad-hoc kubectl commands in the README or in CI for provisioning infrastructure.
 
 ---
 

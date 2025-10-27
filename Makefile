@@ -57,11 +57,13 @@ _state_rm_k8s:
 	@echo "$(YELLOW)🧺 Removing K8s/Helm resources from Terraform state$(RESET)"
 	-@$(TF) state rm module.grafana.helm_release.grafana >/dev/null 2>&1 || true
 	-@$(TF) state rm module.grafana.kubernetes_persistent_volume.grafana_pv >/dev/null 2>&1 || true
+	-@$(TF) state rm module.grafana.kubernetes_persistent_volume_claim.grafana_pvc >/dev/null 2>&1 || true
 	-@$(TF) state rm module.grafana.kubernetes_namespace.monitoring >/dev/null 2>&1 || true
 	-@$(TF) state rm helm_release.aws_load_balancer_controller >/dev/null 2>&1 || true
 	-@$(TF) state rm kubernetes_config_map.aws_logging >/dev/null 2>&1 || true
-	# Fallback: strip any other lingering k8s/helm entries
-	-@$(TF) state list 2>/dev/null | egrep '^(helm_release|kubernetes_)' | xargs -r $(TF) state rm >/dev/null 2>&1 || true
+	# Fallback: strip any other lingering k8s/helm entries (match module-prefixed too)
+	-@$(TF) state list 2>/dev/null | \
+	  grep -E '(^|\.)(helm_release|kubernetes_)' | xargs -I{} $(TF) state rm {} >/dev/null 2>&1 || true
 
 # Cleans up leftover AWS network resources (ALBs/ENIs) before destroy
 _aws_net_purge:
@@ -89,20 +91,65 @@ _aws_net_purge:
 	    aws ec2 delete-network-interface --region $$REGION --network-interface-id $$ENI >/dev/null 2>&1 || true; \
 	  done
 
+# Currently there's an underlying dependency bug with VPC deletion in TF; this removes it from state to allow additional deletion step after destroy
+_state_rm_vpc:
+	@echo "$(YELLOW)🧺 Removing VPC from Terraform state (and caching VPC ID)$(RESET)"
+	@set -eu; \
+	REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}"; \
+	VPC_ID="$$(TF_IN_AUTOMATION=1 $(TF) output -raw vpc_id 2>/dev/null || true)"; \
+	if [ -z "$$VPC_ID" ] || ! echo "$$VPC_ID" | grep -q '^vpc-'; then \
+	  VPC_ID="$$(aws eks describe-cluster --region $$REGION --name final-eks-cluster \
+	    --query 'cluster.resourcesVpcConfig.vpcId' --output text 2>/dev/null || true)"; \
+	fi; \
+	if echo "$$VPC_ID" | grep -q '^vpc-'; then \
+	  printf "%s\n" "$$VPC_ID" > .last_vpc_id; \
+	  echo "  → cached VPC ID: $$VPC_ID"; \
+	else \
+	  echo "  → no VPC ID found to cache (that’s okay)"; \
+	fi; \
+	-@$(TF) state rm 'module.vpc.module.vpc.aws_vpc.this[0]' >/dev/null 2>&1 || true
+
+# Force deletes the VPC after destroy by attempting deletion multiple times (to allow for dependency cleanup)
+_force_delete_vpc:
+	@set -euo pipefail; \
+	VPC_ID="$$(cat .last_vpc_id 2>/dev/null || true)"; \
+	[ -z "$$VPC_ID" ] && { echo "$(YELLOW)↪ No cached VPC ID — skipping.$(RESET)"; exit 0; }; \
+	REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}"; \
+	# If VPC doesn't exist anymore, exit immediately
+	if ! aws ec2 describe-vpcs --vpc-ids "$$VPC_ID" --region "$$REGION" >/dev/null 2>&1; then \
+	  echo "$(YELLOW)ℹ️  VPC $$VPC_ID already deleted or not found.$(RESET)"; \
+	  rm -f .last_vpc_id >/dev/null 2>&1 || true; \
+	  exit 0; \
+	fi; \
+	# Attempt up to 5 times (with small delay)
+	for i in $$(seq 1 5); do \
+	  if aws ec2 delete-vpc --region "$$REGION" --vpc-id "$$VPC_ID" >/dev/null 2>&1; then \
+	    rm -f .last_vpc_id >/dev/null 2>&1 || true; \
+	    echo "$(GREEN)✅ VPC $$VPC_ID deleted$(RESET)"; \
+	    exit 0; \
+	  fi; \
+	  sleep 3; \
+	done; \
+	echo "$(YELLOW)ℹ️  Skipped VPC $$VPC_ID — already removed or pending AWS cleanup.$(RESET)"
+
 # Confirms IP to use for EKS API access and saves to .make_env_public_access
 _confirm_ip:
 	@IP="$$(curl -s https://checkip.amazonaws.com)"; \
-	read -r -p "Allow which IP/CIDR for EKS API? [$$IP/32] " CIDR; \
-	[ -z "$$CIDR" ] && CIDR="$$IP/32"; \
-	read -r -p "Use $$CIDR ? [y/N] " Y; \
-	[ "$$Y" = "y" ] || { echo "IP confirmation cancelled. Please set public_access_cidrs manually in your tfvars file."; exit 1; }; \
+	TFVARS_IP="$$(grep -E 'public_access_cidrs' $(TFVARS) 2>/dev/null | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/32' | head -n1)"; \
+	echo "🌐 Detected current public IP: $$IP"; \
+	if [ -n "$$TFVARS_IP" ]; then \
+	  echo "🗂  IP configured in $(TFVARS): $$TFVARS_IP"; \
+	else \
+	  echo "⚠️  No public_access_cidrs found in $(TFVARS)"; \
+	fi; \
+	read -r -p "Use the IP from $(TFVARS) (y/N)? " USE_TFVARS; \
+	case "$$USE_TFVARS" in \
+	  [yY]) CIDR="$$TFVARS_IP";; \
+	  *) read -r -p "Enter IP/CIDR to use (detected $$IP/32): " CIDR; \
+	     [ -z "$$CIDR" ] && CIDR="$$IP/32";; \
+	esac; \
 	printf "export TF_VAR_public_access_cidrs='[\"%s\"]'\n" "$$CIDR" > .make_env_public_access; \
 	echo "✅ Will allow $$CIDR (saved to .make_env_public_access)"
-
-# Get Grafana URL after apply
-grafana-url:
-	@kubectl -n monitoring get ingress grafana \
-	  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}'
 
 # Initializes Terraform with backend and all modules found in modules/ (Not including .* dirs)
 init: _guard_backend
@@ -118,6 +165,7 @@ init: _guard_backend
 # Terraform plan using env tfvars and outputs to plan file
 plan: _guard_tfvars
 	@echo "$(YELLOW)🧠 Planning for $(ENV)$(RESET)"
+	$(MAKE) _confirm_ip
 	@. ./.make_env_public_access; \
 	$(TF) plan -var-file=$(TFVARS) -out=plan-$(ENV).tfplan
 
@@ -129,10 +177,12 @@ apply:
 # Destroy resources for the selected environment including above pre-cleanup steps
 destroy: _guard_tfvars
 	@echo "$(YELLOW)💣 Destroying $(ENV)$(RESET)"
-	$(MAKE) _aws_net_purge
-	$(MAKE) _force_k8s_purge
-	$(MAKE) _state_rm_k8s
-	@$(TF) destroy -var-file=$(TFVARS)
+	$(MAKE) -s _aws_net_purge
+	$(MAKE) -s _force_k8s_purge
+	$(MAKE) -s _state_rm_k8s
+	$(MAKE) -s _state_rm_vpc
+	$(TF) destroy -var-file=$(TFVARS) -refresh=true -lock-timeout=5m
+	$(MAKE) -s _force_delete_vpc
 
 # Validates Terraform configuration syntax at root
 validate:
