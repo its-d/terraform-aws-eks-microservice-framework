@@ -334,7 +334,7 @@ pip install -r requirements.txt
 export AWS_PROFILE=<PROFILE_NAME>
 ```
 
-5. Create env folder 
+5. Create env folder
 ```bash
 mkdir -p env/dev
 ```
