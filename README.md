@@ -1,43 +1,4 @@
 
----
-## 🔒 EKS API Access — Why IP Configuration Matters
-
-Terraform (and Helm) must reach the EKS API endpoint during `apply`.
-If your public IP is not listed in `public_access_cidrs`, you’ll see TLS handshake
-or timeout errors even though the cluster exists.
-
-**Set your IP safely:**
-```bash
-make _confirm_ip ENV=dev
-```
-This command detects your current public IPv4 address and injects it into your environment
-tfvars file:
-
-```hcl
-public_access_cidrs = ["<your-ip>/32"]
-endpoint_public_access = true
-```
-
-**Why it’s required**
-- Prevents failed `kubectl` or `helm` calls that depend on API access.
-- Avoids accidentally exposing the cluster to the internet (`0.0.0.0/0`).
-- Keeps your deployments reproducible when switching networks or VPNs.
-
-**If skipped**
-- `terraform apply` may hang or fail with:
-  ```
-  could not get current server API group list:
-  net/http: TLS handshake timeout
-  ```
-- Helm charts and Kubernetes resources will not deploy.
-- Destroy operations may partially complete and leave residual resources.
-
-**In automation**
-- Once you move apply into CI/CD (inside AWS or GitOps), you can disable public access entirely
-  and remove the `_confirm_ip` step.
-
----
-
 # 🚀 terraform-aws-eks-microservice-framework
 
 A modular, production-ready Terraform framework for deploying Amazon EKS and running microservices (Fargate-backed). This repository provisions networking, IAM/IRSA, the EKS control plane, the AWS Load Balancer Controller, and a ready-to-use Grafana deployment with persistent storage managed by Amazon EFS so teams can stand up a repeatable EKS environment with durable monitoring storage.
