@@ -26,7 +26,7 @@ resource "kubernetes_namespace" "monitoring" {
 /*
 -------------------------
 * Resource: Helm Release for Grafana
-* Description: Deploys Grafana using the official Helm chart with EFS persistence and ALB ingress.
+* Description: Deploys Grafana using the official Helm chart with ALB ingress.
 * Variables:
   - grafana_admin_user
   - grafana_admin_password

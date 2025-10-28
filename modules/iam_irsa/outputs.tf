@@ -11,10 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# modules/iam_irsa/outputs.tf
-
-# output "efs_csi_driver_role_arn" {
-#   description = "IAM role ARN for the EFS CSI Driver"
-#   value       = module.efs_irsa.iam_role_arn
-# }

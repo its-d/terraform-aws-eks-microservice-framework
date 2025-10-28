@@ -1,11 +1,10 @@
 # Grafana module — README
 
 Purpose
-- Deploy Grafana into the Kubernetes cluster (namespace `monitoring`) and provide a persistent volume backed by EFS for dashboards, plugins, and other persisted state.
+- Deploy Grafana into the Kubernetes cluster (namespace `monitoring`) for dashboards and plugins.
 
 What this module provides
 - Kubernetes Namespace `monitoring`
-- Kubernetes PersistentVolume (EFS-backed) and PersistentVolumeClaim
 - Helm release installation for Grafana
 - Optional helper null_resource for small platform-specific fixes
 
@@ -42,8 +41,4 @@ data "aws_ssm_parameter" "grafana_admin_password" {
 - Do not hardcode sensitive values into env tfvars; prefer CI secret injection or Secrets Manager.
 
 Troubleshooting
-- If PVC remains Pending: ensure `efs_file_system_id` exists, mount targets exist in the cluster subnets, and `efs_security_group_id` allows TCP/2049 from the cluster SG.
 - Check Grafana pod logs: `kubectl -n monitoring logs -l app.kubernetes.io/name=grafana`
-- Validate PV/PVC binding with kubectl:
-  - `kubectl get pv`
-  - `kubectl get pvc -n monitoring`

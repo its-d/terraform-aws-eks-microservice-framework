@@ -1,7 +1,7 @@
 # Security module — README
 
 Purpose
-- Define and manage security groups and network-level rules used across the platform: EKS cluster, EFS mount targets, load balancers, and application-level traffic rules.
+- Define and manage security groups and network-level rules used across the platform: EKS cluster, load balancers, and application-level traffic rules.
 
 What this module provides
 - Security group for EKS cluster ENIs (cluster SG)

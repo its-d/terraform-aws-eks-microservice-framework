@@ -1,12 +1,12 @@
 # 🚀 terraform-aws-eks-microservice-framework
 
-A modular, production-ready Terraform framework for deploying Amazon EKS and running microservices (Fargate-backed). This repository provisions networking, IAM/IRSA, the EKS control plane, the AWS Load Balancer Controller, and a ready-to-use Grafana deployment with persistent storage managed by Amazon EFS so teams can stand up a repeatable EKS environment with durable monitoring storage.
+A modular, production-ready Terraform framework for deploying Amazon EKS and running microservices (Fargate-backed). This repository provisions networking, IAM/IRSA, the EKS control plane, the AWS Load Balancer Controller, and a ready-to-use Grafana deployment so teams can stand up a repeatable EKS environment with durable monitoring storage.
 
 ---
 
 ## 🎯 Project / Goal / Who this is for
 
-- Goal: Provide a repeatable, auditable baseline to provision a full EKS platform (Fargate profiles), CI-friendly Terraform modules, monitoring (Grafana with persistent EFS storage), and load balancing integration (ALB/NLB) using opinionated, modular Terraform.
+- Goal: Provide a repeatable, auditable baseline to provision a full EKS platform (Fargate profiles), CI-friendly Terraform modules, monitoring (Grafana with ephemral storage), and load balancing integration (ALB/NLB) using opinionated, modular Terraform.
 - Who it's for: Infrastructure engineers, platform teams, and DevOps who need a production-oriented starting point for microservice deployments on AWS EKS with least-privilege IAM and clear operational procedures.
 - Typical uses: PoC, staging, and production clusters where Terraform manages infrastructure and provides an out-of-the-box Grafana that persists dashboards and plugins across redeploys.
 
@@ -202,29 +202,18 @@ Secrets & recommended pattern
 
 ---
 
-## 📌 Grafana (ready-to-use) with EFS — primary feature
+## 📌 Grafana (ready-to-use) — primary feature
 
-This repository includes a Grafana deployment wired to persistent storage managed by the storage module (EFS) and exposed to Grafana via PersistentVolume/PersistentVolumeClaim.
-
-Important behavioral note (default flow)
-- The `modules/storage` module creates the EFS file system, mount targets, and access point when deployed. The root `main.tf` instantiates `module.storage` and passes its outputs to `module.grafana`.
-
-What is created (when storage is enabled)
-- `aws_efs_file_system`
-- `aws_efs_access_point`
-- `aws_efs_mount_target` in required subnets
-- security group(s) to allow NFS (TCP/2049) from the cluster ENIs
+This repository includes a Grafana deployment with ephemral storage and exposed to Grafana.
 
 How to confirm (after apply)
 ```bash
 terraform output -json | jq .
-# or inspect state
-terraform state list | grep -i efs || true
 ```
 
 Grafana access
 - After apply, retrieve Grafana information using the Makefile convenience targets or Terraform outputs:
-  - `make outputs` (recommended — prints cluster and EFS outputs if available)
+  - `make outputs` (recommended — prints cluster outputs if available)
 - The repository intentionally avoids baking manual kubectl instructions into the standard deploy path — the platform deploys via Terraform (init/plan/apply) and application manifests should be managed by CI/GitOps or developer workflows outside of this Makefile-driven infra flow.
 
 ---
@@ -285,7 +274,7 @@ Terraform destroy can fail with "resource in use" when cloud resources (ENIs, ta
 
 Why:
 - Kubernetes controllers (e.g., AWS Load Balancer Controller) create and manage AWS resources (target groups, listeners, NLB/ALB resources).
-- Fargate pods mount ENIs. EFS mounts (via PVCs) remain until pods unmount PVCs. AWS blocks deletion of VPC/subnets/SGs/resources while attachments exist.
+- Fargate pods mount ENIs. AWS blocks deletion of VPC/subnets/SGs/resources while attachments exist.
 
 Recommended destroy ordering:
 1. Ensure application workloads, Helm releases, or GitOps-managed resources are removed from the cluster (use your deployment tooling or Helm/GitOps processes).
@@ -363,7 +352,7 @@ make apply
 ```
 
 After apply
-- Use `make outputs` (if available in the Makefile) to retrieve important values such as the cluster name, EFS ID's (Grafana Endpoint is located within Load Balancer Service in the AWS Console).
+- Use `make outputs` (if available in the Makefile) to retrieve important values such as the cluster name, etc. (Grafana Endpoint is located within Load Balancer Service in the AWS Console).
 - If your team manages application manifests (Helm, GitOps), apply them through your standard CI/GitOps pipeline rather than including them in the infra Makefile.
 
 This Makefile-driven flow avoids embedding ad-hoc kubectl commands in the README or in CI for provisioning infrastructure.
@@ -387,7 +376,7 @@ pre-commit run --all-files
 Expanded docs live in `docs/`:
 - `docs/architecture.md` — architecture overview and data flow
 - `docs/contributing.md` — contribution and testing workflow
-- `docs/troubleshooting.md` — extended troubleshooting (EFS, ENIs, locks, etc.)
+- `docs/troubleshooting.md` — extended troubleshooting (ENIs, locks, etc.)
 
 ---
 

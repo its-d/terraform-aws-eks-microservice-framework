@@ -45,4 +45,4 @@ Operational notes & recommendations
 
 Troubleshooting
 - If resources fail to create: validate AZ names and available IPs in the chosen CIDR blocks.
-- If EKS or EFS mount targets fail: ensure subnets have sufficient IP space.
+- If EKS mount targets fail: ensure subnets have sufficient IP space.

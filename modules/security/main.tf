@@ -58,42 +58,6 @@ resource "aws_security_group" "alb_sg" {
 
 /*
 ------------------------
-* Resource: EFS Security Group
-* Description: Security group for EFS access from EKS Fargate pods
-* Variables:
-  - vpc_id
-  - cluster_security_group_id
-  - common_tags
-------------------------
-*/
-resource "aws_security_group" "efs_sg" {
-  name        = "efs-sg"
-  description = "Security group for EFS access from EKS Fargate pods"
-  vpc_id      = var.vpc_id
-
-  ingress {
-    description = "Allow NFS from EKS Fargate pods"
-    from_port   = 2049
-    to_port     = 2049
-    protocol    = "tcp"
-    security_groups = [
-      var.cluster_security_group_id
-    ]
-  }
-
-  egress {
-    description = "Allow all egress"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = var.common_tags
-}
-
-/*
-------------------------
 * Resource: Cluster Security Group Rule for ALB
 * Description: Allows ALB security group to access EKS cluster security group on port 3000
 * Variables:
