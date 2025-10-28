@@ -352,7 +352,8 @@ make apply
 ```
 
 After apply
-- Use `make outputs` (if available in the Makefile) to retrieve important values such as the cluster name, etc. (Grafana Endpoint is located within Load Balancer Service in the AWS Console).
+- Grafana Endpoint is located within Load Balancer Service in the AWS Console.
+- Use `make outputs` (if available in the Makefile) to retrieve important values such as the cluster name, etc.
 - If your team manages application manifests (Helm, GitOps), apply them through your standard CI/GitOps pipeline rather than including them in the infra Makefile.
 
 This Makefile-driven flow avoids embedding ad-hoc kubectl commands in the README or in CI for provisioning infrastructure.
