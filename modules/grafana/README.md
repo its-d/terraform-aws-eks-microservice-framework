@@ -10,13 +10,6 @@ What this module provides
 
 Quick usage (root wiring)
 ```hcl
-module "storage" {
-  source                = "./modules/storage"
-  identifier            = var.identifier
-  private_subnet_ids    = module.vpc.private_subnet_ids
-  common_tags           = local.common_tags
-}
-
 module "grafana" {
   source                 = "./modules/grafana"
   identifier             = var.identifier

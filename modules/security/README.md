@@ -6,7 +6,7 @@ Purpose
 What this module provides
 - Security group for EKS cluster ENIs (cluster SG)
 - Security group rules for load balancers to reach pod ports (as needed)
-- Outputs used by storage and other modules
+- Outputs other modules
 
 Quick usage (root wiring)
 ```hcl

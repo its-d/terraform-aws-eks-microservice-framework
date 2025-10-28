@@ -5,7 +5,7 @@
 - Finalized Terraform AWS EKS Microservice Framework
 - Supports:
   - AWS VPC, IAM, Security, and EKS (Fargate)
-  - Grafana with Ephemral Storage
+  - Grafana with ephemral Storage
   - AWS Load Balancer Controller with ALB ingress
 - Includes:
   - Complete `Makefile` automation for deploy/destroy and cleanup (ALBs, ENIs, K8s)

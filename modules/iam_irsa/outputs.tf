@@ -11,3 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+output "alb_irsa_role_arn" {
+  description = "IRSA role ARN for the AWS Load Balancer Controller"
+  value       = aws_iam_role.alb_irsa.arn
+}

@@ -1,6 +1,6 @@
 # 🚀 terraform-aws-eks-microservice-framework
 
-A modular, production-ready Terraform framework for deploying Amazon EKS and running microservices (Fargate-backed). This repository provisions networking, IAM/IRSA, the EKS control plane, the AWS Load Balancer Controller, and a ready-to-use Grafana deployment so teams can stand up a repeatable EKS environment with durable monitoring storage.
+A modular, production-ready Terraform framework for deploying Amazon EKS and running microservices (Fargate-backed). This repository provisions networking, IAM/IRSA, the EKS control plane, the AWS Load Balancer Controller, and a ready-to-use Grafana deployment so teams can stand up a repeatable EKS environment.
 
 ---
 
@@ -225,7 +225,7 @@ Grafana access
 - `output.tf` — exported outputs
 - `alb_controller.tf` — AWS Load Balancer Controller Helm configuration
 - `Makefile` — convenience workflow targets (init, plan, apply, destroy, etc.)
-- `modules/*` — VPC, EKS, IAM, storage, Grafana, app, etc.
+- `modules/*` — VPC, EKS, IAM, Grafana, etc.
 - `env/<env>/terraform.tfvars` — environment-specific variables (create these)
 - `env/<env>/backend.hcl` - environment-specific backend configuration (create this)
 - `docs/*` — architecture, contributing, troubleshooting

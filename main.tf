@@ -48,8 +48,6 @@ terraform {
 Data Source helpers for EKS cluster access
 -------------------------
 */
-# Data from the cluster (use module outputs or data sources)
-
 resource "null_resource" "write_kubeconfig" {
   triggers = {
     cluster = module.eks.cluster_name
@@ -106,7 +104,6 @@ Module responsible for EKS configuration
 and Fargate Profile setup
 -------------------------
 */
-
 module "eks" {
   source                 = "./modules/eks/"
   identifier             = var.identifier

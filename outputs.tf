@@ -50,7 +50,7 @@ output "pod_execution_role_arn" {
   value       = module.iam.pod_execution_role_arn
 }
 
-# -------- Networking / Storage --------
+# -------- Networking --------
 output "vpc_id" {
   description = "VPC ID"
   value       = module.vpc.vpc_id

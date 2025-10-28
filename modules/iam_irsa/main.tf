@@ -30,6 +30,15 @@ locals {
   sa_subject   = "system:serviceaccount:${local.sa_namespace}:${local.sa_name}"
 }
 
+/*
+----------------------------
+* Resources: ALB Controller IRSA
+* Description: IAM Role and Policy for the AWS Load Balancer Controller using IRSA.
+* Variables:
+  - oidc_provider_arn
+  - common_tags
+----------------------------
+*/
 resource "aws_iam_role" "alb_irsa" {
   name = "alb-controller-irsa"
   assume_role_policy = jsonencode({
@@ -49,18 +58,27 @@ resource "aws_iam_role" "alb_irsa" {
   tags = var.common_tags
 }
 
-# Use the official policy JSON you already have in repo
+
+/*
+----------------------------
+* Resource: ALB Controller IAM Policy and Attachment
+* Description: IAM Policy and Attachment for the AWS Load Balancer Controller.
+* Variables: None
+----------------------------
+*/
 resource "aws_iam_policy" "alb_controller" {
   name   = "AWSLoadBalancerControllerIAMPolicy"
   policy = file("${path.module}/policies/aws_load_balancer_controller_iam_policy.json")
 }
 
+/*
+----------------------------
+* Resource: ALB Controller IAM Role Policy Attachment
+* Description: Attaches the IAM Policy to the ALB Controller IRSA Role.
+* Variables: None
+----------------------------
+*/
 resource "aws_iam_role_policy_attachment" "alb_attach" {
   role       = aws_iam_role.alb_irsa.name
   policy_arn = aws_iam_policy.alb_controller.arn
-}
-
-output "alb_irsa_role_arn" {
-  description = "IRSA role ARN for the AWS Load Balancer Controller"
-  value       = aws_iam_role.alb_irsa.arn
 }
