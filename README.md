@@ -187,11 +187,6 @@ Minimum fields (from terraform.tfvars.example and module variables):
 - `grafana_admin_user` — Grafana admin username
 - `grafana_admin_password` — Grafana admin password (sensitive)
 
-Other possible inputs you may need depending on your usage:
-- `private_subnet_ids` — if using existing subnets
-- `cluster_role_arn` — if pre-creating cluster IAM role
-- `pod_execution_role_arn` — pod execution role for IRSA
-
 Security:
 - Never commit real credentials. Add `env/*` to `.gitignore` to avoid accidental commits.
 
