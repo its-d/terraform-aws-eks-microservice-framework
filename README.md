@@ -1,10 +1,10 @@
-# 🚀 terraform-aws-eks-microservice-framework
+# terraform-aws-eks-microservice-framework
 
 A modular, production-ready Terraform framework for deploying Amazon EKS and running microservices (Fargate-backed). This repository provisions networking, IAM/IRSA, the EKS control plane, the AWS Load Balancer Controller, and a ready-to-use Grafana deployment so teams can stand up a repeatable EKS environment.
 
 ---
 
-## 🎯 Project / Goal / Who this is for
+## Project / Goal / Who this is for
 
 - Goal: Provide a repeatable, auditable baseline to provision a full EKS platform (Fargate profiles), CI-friendly Terraform modules, monitoring (Grafana with ephemral storage), and load balancing integration (ALB/NLB) using opinionated, modular Terraform.
 - Who it's for: Infrastructure engineers, platform teams, and DevOps who need a production-oriented starting point for microservice deployments on AWS EKS with least-privilege IAM and clear operational procedures.
@@ -12,7 +12,7 @@ A modular, production-ready Terraform framework for deploying Amazon EKS and run
 
 ---
 
-## ⚙️ Prerequisites (fresh machine)
+## Prerequisites (fresh machine)
 
 Minimum recommended (tested): Terraform >= 1.6 (CI pins 1.9.x — see CI workflow), AWS CLI v2, Helm >= 3.8, kubectl matching EKS control plane, Python >= 3.10.
 
@@ -62,7 +62,7 @@ Windows
 
 ---
 
-## 🔧 First-time backend / bootstrap (recommended)
+## First-time backend / bootstrap (recommended)
 
 You can create the backend resources manually or with a small helper. Example Terraform snippet to create a state S3 bucket & DynamoDB table (run in a separate one-off bootstrap workspace) can live in `scripts/bootstrap-backend.example.tf` (suggestion). If you prefer commands, create the S3 bucket and DynamoDB table via AWS console / CLI.
 
@@ -100,7 +100,7 @@ Tip: Use a feature branch and open a PR so CI validates formatting and terraform
 
 ---
 
-## 🔒 EKS API Access — Why IP Configuration Matters
+## EKS API Access — Why IP Configuration Matters
 
 Terraform (and Helm) must reach the EKS API endpoint during `apply`.
 If your public IP is not listed in `public_access_cidrs`, you’ll see TLS handshake
@@ -174,7 +174,7 @@ Enforcement guidance
 
 ---
 
-## 🧾 Environment tfvars — location and required fields
+## Environment tfvars — location and required fields
 
 The Makefile expects `env/$(ENV)/terraform.tfvars`. Copy `terraform.tfvars.example` to `env/dev/terraform.tfvars` and populate the values.
 
@@ -202,7 +202,7 @@ Secrets & recommended pattern
 
 ---
 
-## 📌 Grafana (ready-to-use) — primary feature
+## Grafana (ready-to-use) — primary feature
 
 This repository includes a Grafana deployment with ephemral storage and exposed to Grafana.
 
@@ -218,7 +218,7 @@ Grafana access
 
 ---
 
-## 🗂 Repository structure (relevant parts)
+## Repository structure (relevant parts)
 
 - `main.tf` — root orchestration of modules
 - `variables.tf` — global inputs
@@ -233,7 +233,7 @@ Grafana access
 
 ---
 
-## 🧭 Makefile: targets and explanations
+## Makefile: targets and explanations
 
 High-level targets (see Makefile for exact behavior):
 
@@ -268,9 +268,9 @@ outputs:
 
 ---
 
-## ⚠️ Why ensure in-cluster resources are removed before `terraform destroy`
+## Why ensure in-cluster resources are removed before `terraform destroy`
 
-Terraform destroy can fail with "resource in use" when cloud resources (ENIs, target groups, PVC mounts) are still attached by Kubernetes controllers or pods.
+Terraform destroy can fail with "resource in use" when cloud resources (ENIs, target groups) are still attached by Kubernetes controllers or pods.
 
 Why:
 - Kubernetes controllers (e.g., AWS Load Balancer Controller) create and manage AWS resources (target groups, listeners, NLB/ALB resources).
@@ -278,8 +278,8 @@ Why:
 
 Recommended destroy ordering:
 1. Ensure application workloads, Helm releases, or GitOps-managed resources are removed from the cluster (use your deployment tooling or Helm/GitOps processes).
-2. Remove Grafana Helm release or application Helm charts so PVCs unmount.
-3. Wait for pods, PVCs, and ENIs to be removed (verify in the AWS Console and/or Kubernetes dashboard).
+2. Remove Grafana Helm release or application Helm charts unmount.
+3. Wait for pods and ENIs to be removed (verify in the AWS Console and/or Kubernetes dashboard).
 4. Run `make destroy`. If Terraform still errors, inspect state and remove blocking resources cautiously.
 
 Notes:
@@ -287,7 +287,7 @@ Notes:
 
 ---
 
-## 🧪 Deploying with the Makefile (replaces earlier manual deploy guidance)
+## Deploying with the Makefile (replaces earlier manual deploy guidance)
 
 This repository uses the Makefile workflow for the recommended deploy steps. The Makefile drives Terraform init/plan/apply and other convenience tasks so you do not need to run ad-hoc kubectl/helm commands as part of the standard infra deploy.
 
@@ -360,7 +360,7 @@ This Makefile-driven flow avoids embedding ad-hoc kubectl commands in the README
 
 ---
 
-## 🔁 CI and pre-commit
+## CI and pre-commit
 
 - Install pre-commit and run locally:
 ```bash
@@ -372,7 +372,7 @@ pre-commit run --all-files
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 Expanded docs live in `docs/`:
 - `docs/architecture.md` — architecture overview and data flow
@@ -381,13 +381,13 @@ Expanded docs live in `docs/`:
 
 ---
 
-## ⚖️ License
+## License
 
 Apache License 2.0 — see LICENSE.
 
 ---
 
-## 👤 Author
+## Author
 
 **Darian Lee** — Infrastructure Engineer & Cloud Consultant
 [LinkedIn](https://www.linkedin.com/in/darian-873)

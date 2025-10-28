@@ -32,7 +32,7 @@ _guard_backend:
 # Updates destroy process to forcibly clean up K8s/Helm resources first
 _force_k8s_purge:
 	@{ \
-	  echo "============================> Forcing local K8s cleanup (Grafana ns/PV/etc)"; \
+	  echo "============================> Forcing local K8s cleanup (Grafana ns/etc)"; \
 	  set -euo pipefail; \
 	  CLUSTER="$$(terraform output -raw cluster_name 2>/dev/null || true)"; \
 	  REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}"; \
@@ -49,10 +49,6 @@ _force_k8s_purge:
 	  helm -n kube-system uninstall aws-load-balancer-controller --no-hooks --timeout 20s >/dev/null 2>&1 || true; \
 	  kubectl -n monitoring delete ingress,svc,deploy,statefulset,job,cronjob,cm,secret --all --ignore-not-found --wait=false >/dev/null 2>&1 || true; \
 	  kubectl -n monitoring delete pod --all --force --grace-period=0 --ignore-not-found >/dev/null 2>&1 || true; \
-	  kubectl -n monitoring delete pvc --all --ignore-not-found --wait=false >/dev/null 2>&1 || true; \
-	  kubectl -n monitoring get pvc -o name 2>/dev/null | xargs -r -n1 -P6 sh -c 'kubectl -n monitoring patch "$$0" --type=merge -p "{\"metadata\":{\"finalizers\":null}}"' >/dev/null 2>&1 || true; \
-	  kubectl get pv -o json 2>/dev/null | jq -r '.items[] | select(.spec.claimRef.namespace=="monitoring") | .metadata.name' | xargs -r -n1 -P6 sh -c 'kubectl delete pv "$$0" --wait=false' >/dev/null 2>&1 || true; \
-	  kubectl get pv -o json 2>/dev/null | jq -r '.items[] | select(.spec.claimRef.namespace=="monitoring") | .metadata.name' | xargs -r -n1 -P6 sh -c 'kubectl patch pv "$$0" --type=merge -p "{\"metadata\":{\"finalizers\":null}}"' >/dev/null 2>&1 || true; \
 	  kubectl delete namespace monitoring --ignore-not-found --wait=false >/dev/null 2>&1 || true; \
 	  if kubectl get ns monitoring -o json >/dev/null 2>&1; then \
 	    kubectl get ns monitoring -o json | jq 'del(.spec.finalizers)' | kubectl replace --raw "/api/v1/namespaces/monitoring/finalize" -f - >/dev/null 2>&1 || true; \
@@ -65,8 +61,6 @@ _state_rm_k8s:
 	@{ \
 	  echo "🧺 Removing K8s/Helm resources from Terraform state"; \
 	  $(TF) state rm module.grafana.helm_release.grafana >/dev/null 2>&1 || true; \
-	  $(TF) state rm module.grafana.kubernetes_persistent_volume.grafana_pv >/dev/null 2>&1 || true; \
-	  $(TF) state rm module.grafana.kubernetes_persistent_volume_claim.grafana_pvc >/dev/null 2>&1 || true; \
 	  $(TF) state rm module.grafana.kubernetes_namespace.monitoring >/dev/null 2>&1 || true; \
 	  $(TF) state rm helm_release.aws_load_balancer_controller >/dev/null 2>&1 || true; \
 	  $(TF) state rm kubernetes_config_map.aws_logging >/dev/null 2>&1 || true; \
