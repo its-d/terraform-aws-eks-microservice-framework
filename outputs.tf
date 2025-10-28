@@ -17,6 +17,7 @@ output "region" {
   value       = var.region
 }
 
+# -------- EKS (from modules/eks wrapper) --------
 output "cluster_name" {
   description = "EKS cluster name"
   value       = module.eks.cluster_name
@@ -27,11 +28,18 @@ output "oidc_issuer_url" {
   value       = module.eks.oidc_issuer_url
 }
 
-output "alb_irsa_role_arn" {
-  description = "IRSA role ARN for the AWS Load Balancer Controller"
-  value       = module.iam_irsa.alb_irsa_role_arn
+output "cluster_security_group_id" {
+  description = "EKS cluster primary security group ID"
+  value       = module.eks.cluster_security_group_id
 }
 
+# Optional but useful for providers / debugging
+output "cluster_endpoint" {
+  description = "EKS cluster API endpoint"
+  value       = module.eks.cluster_endpoint
+}
+
+# -------- IAM / IRSA (keep if you're managing ALB IRSA outside EKS module) --------
 output "cluster_role_arn" {
   description = "IAM role ARN for the EKS control plane"
   value       = module.iam.cluster_role_arn
@@ -42,11 +50,7 @@ output "pod_execution_role_arn" {
   value       = module.iam.pod_execution_role_arn
 }
 
-output "alb_sg_id" {
-  description = "Security Group ID to attach to the NLB"
-  value       = module.security.alb_sg_id
-}
-
+# -------- Networking / Storage --------
 output "vpc_id" {
   description = "VPC ID"
   value       = module.vpc.vpc_id
@@ -57,22 +61,7 @@ output "private_subnet_ids" {
   value       = module.vpc.private_subnet_ids
 }
 
-output "cluster_security_group_id" {
-  description = "EKS cluster security group ID (used by Fargate pods)"
-  value       = module.eks.cluster_security_group_id
-}
-
-output "efs_file_system_id" {
-  description = "EFS file system ID"
-  value       = module.storage.efs_file_system_id
-}
-
-output "efs_access_point_id" {
-  description = "EFS access point ID for Grafana"
-  value       = module.storage.efs_access_point_id
-}
-
-output "efs_sg_id" {
-  description = "Security group ID used by EFS mount targets"
-  value       = module.security.efs_sg_id
+output "alb_sg_id" {
+  description = "Security Group ID to attach to load balancers"
+  value       = module.security.alb_sg_id
 }

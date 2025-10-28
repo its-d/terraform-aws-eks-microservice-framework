@@ -15,8 +15,3 @@ output "alb_sg_id" {
   description = "Security Group ID to attach to the NLB"
   value       = aws_security_group.alb_sg.id
 }
-
-output "efs_sg_id" {
-  description = "Security Group ID to attach to EFS access from EKS Fargate pods"
-  value       = aws_security_group.efs_sg.id
-}

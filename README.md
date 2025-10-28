@@ -187,9 +187,6 @@ Minimum fields (from terraform.tfvars.example and module variables):
 - `grafana_admin_user` — Grafana admin username
 - `grafana_admin_password` — Grafana admin password (sensitive)
 
-Note about EFS:
-- Do NOT set `efs_file_system_id` or `efs_access_point_id` in `env` tfvars for the default behavior. The storage module creates EFS and the root module wires its outputs into grafana.
-
 Other possible inputs you may need depending on your usage:
 - `private_subnet_ids` — if using existing subnets
 - `cluster_role_arn` — if pre-creating cluster IAM role
@@ -211,8 +208,6 @@ This repository includes a Grafana deployment wired to persistent storage manage
 
 Important behavioral note (default flow)
 - The `modules/storage` module creates the EFS file system, mount targets, and access point when deployed. The root `main.tf` instantiates `module.storage` and passes its outputs to `module.grafana`.
-- Do NOT set `efs_file_system_id` or `efs_access_point_id` in `env/<env>/terraform.tfvars` for the default workflow — these IDs are produced by Terraform and exposed as module outputs.
-- If you intentionally want to reuse an external EFS created outside this repo, that is an advanced workflow: you must update module usage or supply optional variables to accept external IDs.
 
 What is created (when storage is enabled)
 - `aws_efs_file_system`
@@ -222,8 +217,6 @@ What is created (when storage is enabled)
 
 How to confirm (after apply)
 ```bash
-terraform output efs_file_system_id
-terraform output efs_access_point_id
 terraform output -json | jq .
 # or inspect state
 terraform state list | grep -i efs || true
@@ -282,8 +275,6 @@ Recommended additions (suggested changes you can add to the Makefile)
 ```makefile
 outputs:
 	@echo "Cluster name: $$(terraform output -raw cluster_name 2>/dev/null || echo '<not set>')"
-	@echo "Grafana EFS FS ID: $$(terraform output -raw efs_file_system_id 2>/dev/null || echo '<not set>')"
-	@echo "Grafana EFS AP ID: $$(terraform output -raw efs_access_point_id 2>/dev/null || echo '<not set>')"
 ```
 
 ---

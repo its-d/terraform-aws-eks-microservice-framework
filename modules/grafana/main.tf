@@ -25,57 +25,6 @@ resource "kubernetes_namespace" "monitoring" {
 
 /*
 -------------------------
-* Resource: Kubernetes Persistent Volume for Grafana
-* Description: Creates a Persistent Volume on EFS for Grafana data storage.
-* Variables:
-  - efs_file_system_id
-  - efs_access_point_id
--------------------------
-*/
-resource "kubernetes_persistent_volume" "grafana_pv" {
-  metadata { name = "${var.identifier}-grafana-pv" }
-
-  spec {
-    capacity                         = { storage = "5Gi" }
-    access_modes                     = ["ReadWriteMany"]
-    storage_class_name               = "efs-grafana"
-    persistent_volume_reclaim_policy = "Delete"
-
-    persistent_volume_source {
-      csi {
-        driver        = "efs.csi.aws.com"
-        volume_handle = "${var.efs_file_system_id}::${var.efs_access_point_id}"
-      }
-    }
-
-    mount_options = ["tls"]
-  }
-}
-
-/*
--------------------------
-* Resource: Kubernetes Persistent Volume Claim for Grafana
-* Description: Claims the Persistent Volume for Grafana usage.
-* Variables:
-  - identifier
--------------------------
-*/
-resource "kubernetes_persistent_volume_claim" "grafana_pvc" {
-  metadata {
-    name      = "${var.identifier}-grafana-pvc"
-    namespace = kubernetes_namespace.monitoring.metadata[0].name
-  }
-
-  spec {
-    access_modes       = ["ReadWriteMany"]
-    storage_class_name = "efs-grafana"
-    resources { requests = { storage = "5Gi" } }
-    volume_name = kubernetes_persistent_volume.grafana_pv.metadata[0].name
-  }
-}
-
-/*
--------------------------
 * Resource: Helm Release for Grafana
 * Description: Deploys Grafana using the official Helm chart with EFS persistence and ALB ingress.
 * Variables:
@@ -97,11 +46,7 @@ resource "helm_release" "grafana" {
 
   set {
     name  = "persistence.enabled"
-    value = "true"
-  }
-  set {
-    name  = "persistence.existingClaim"
-    value = kubernetes_persistent_volume_claim.grafana_pvc.metadata[0].name
+    value = "false"
   }
 
   set {
@@ -209,8 +154,6 @@ resource "helm_release" "grafana" {
 
   depends_on = [
     kubernetes_namespace.monitoring,
-    kubernetes_persistent_volume.grafana_pv,
-    kubernetes_persistent_volume_claim.grafana_pvc
   ]
 }
 

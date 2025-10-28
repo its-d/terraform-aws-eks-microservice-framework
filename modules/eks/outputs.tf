@@ -13,16 +13,36 @@
 # limitations under the License.
 
 output "cluster_name" {
-  value       = aws_eks_cluster.eks_cluster.name
+  value       = module.eks.cluster_name
   description = "value of the EKS cluster name"
 }
 
 output "oidc_issuer_url" {
-  value       = aws_eks_cluster.eks_cluster.identity[0].oidc[0].issuer
+  value       = module.eks.cluster_oidc_issuer_url
   description = "OIDC issuer URL for the EKS cluster"
 }
 
 output "cluster_security_group_id" {
   description = "The EKS Cluster Security Group ID used by Fargate pod ENIs"
-  value       = aws_eks_cluster.eks_cluster.vpc_config[0].cluster_security_group_id
+  value       = module.eks.node_security_group_id
+}
+
+output "cluster_endpoint" {
+  description = "EKS cluster endpoint"
+  value       = module.eks.cluster_endpoint
+}
+
+output "cluster_certificate_authority_data" {
+  description = "Base64-encoded certificate data required to access the cluster"
+  value       = module.eks.cluster_certificate_authority_data
+}
+
+output "oidc_provider_arn" {
+  description = "OIDC provider ARN for IRSA integration"
+  value       = module.eks.oidc_provider_arn
+}
+
+output "fargate_profile_arn" {
+  description = "ARN of the created Fargate profile"
+  value       = try(module.eks.fargate_profile_arn, null)
 }
