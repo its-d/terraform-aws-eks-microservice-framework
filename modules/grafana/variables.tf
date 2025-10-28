@@ -24,24 +24,6 @@ variable "grafana_admin_password" {
 
 }
 
-variable "identifier" {
-  type        = string
-  description = "A unique identifier for the resources."
-
-}
-
-variable "efs_file_system_id" {
-  type        = string
-  description = "The ID of the EFS file system to be used by Grafana for storage."
-
-}
-
-variable "efs_access_point_id" {
-  type        = string
-  description = "The ID of the EFS access point to be used by Grafana for storage."
-
-}
-
 variable "region" {
   type        = string
   description = "The AWS region where the resources are deployed."

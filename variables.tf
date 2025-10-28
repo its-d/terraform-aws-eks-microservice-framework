@@ -33,18 +33,6 @@ variable "identifier" {
   description = "A unique identifier for the resources."
 }
 
-variable "endpoint_private_access" {
-  type        = bool
-  description = "Enable private (VPC) access to the EKS API endpoint"
-  default     = true
-}
-
-variable "endpoint_public_access" {
-  type        = bool
-  description = "Enable public internet access to the EKS API endpoint"
-  default     = true
-}
-
 variable "public_access_cidrs" {
   type        = list(string)
   description = "CIDRs allowed to reach the public EKS API"

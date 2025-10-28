@@ -33,7 +33,6 @@ Key inputs (high level)
 - private_subnet_ids — list(string); subnets for control plane ENIs and Fargate.
 - cluster_role_arn — string; IAM role ARN for the EKS control plane.
 - pod_execution_role_arn — string; pod execution role used by Fargate pods (IRSA).
-- endpoint_private_access / endpoint_public_access — bool; control plane accessibility.
 - public_access_cidrs — list(string); allowed CIDRs if public access enabled.
 
 Key outputs
@@ -43,7 +42,7 @@ Key outputs
 
 Requirements & providers
 - Terraform >= 1.5.0
-- AWS provider ~> 6.0
+- AWS provider ~> 5.95
 - null provider ~> 3.2 (used for optional local steps)
 
 Troubleshooting

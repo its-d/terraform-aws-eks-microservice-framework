@@ -29,7 +29,7 @@ Key outputs (examples)
 
 Security & best practices
 - Scope policies to least privilege; avoid `*` where possible.
-- For CI/automation, create a narrowly scoped role with S3/DynamoDB state privileges plus limited EKS/EFS actions. Provide an example policy in docs (recommended).
+- For CI/automation, create a narrowly scoped role with S3/DynamoDB state privileges plus limited EKS actions. Provide an example policy in docs (recommended).
 
 Troubleshooting
 - AccessDenied errors: check the policy attachments and trust relationships for roles being assumed by EKS or CI agents.

@@ -2,7 +2,7 @@
 
 Purpose
 - Create a well-structured, multi-AZ VPC that is the single source of truth for networking in this framework.
-- Provide the networking outputs consumed by other modules (EKS, Storage, Security).
+- Provide the networking outputs consumed by other modules (EKS, Security).
 
 What this module provides
 - VPC with configurable CIDR.
@@ -34,7 +34,7 @@ Key inputs (high level)
 
 Key outputs (examples)
 - vpc_id — the created VPC ID.
-- private_subnet_ids — list of private subnet IDs (used by EKS and storage mount targets).
+- private_subnet_ids — list of private subnet IDs (used by EKS).
 - public_subnet_ids — list of public subnet IDs.
 - availability_zones — list of AZs used.
 
@@ -45,4 +45,4 @@ Operational notes & recommendations
 
 Troubleshooting
 - If resources fail to create: validate AZ names and available IPs in the chosen CIDR blocks.
-- If EKS or EFS mount targets fail: ensure subnets have sufficient IP space.
+- If EKS mount targets fail: ensure subnets have sufficient IP space.

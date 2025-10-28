@@ -27,11 +27,8 @@
    - Deploys controller that converts Kubernetes Service/Ingress resources into AWS ELB resources (ALB/NLB).
    - Uses IRSA for permissions to manage ELB resources.
 
-6. Monitoring: Grafana backed by EFS (Ready-to-use)
-   - Grafana is deployed as part of the stack and can be backed by an EFS file system and access point.
-   - EFS provides persistent storage for Grafana configuration, dashboards, plugins, and data that must survive pod restarts and cluster reprovisioning.
-   - Integration is done via a Kubernetes PersistentVolumeClaim that mounts an EFS-backed PersistentVolume
-   - Security: EFS mount targets must be reachable from cluster networking and SG rules must allow NFS (TCP/2049) traffic.
+6. Monitoring: Grafana (Ready-to-use)
+   - Grafana is deployed as part of the stack.
 
 ---
 
@@ -41,7 +38,6 @@ Internet -> NLB (or ALB) -> Security Group -> Fargate Pod -> EKS Control Plane -
 
 - The AWS Load Balancer Controller observes Services/Ingress in Kubernetes and creates the corresponding AWS load balancer resources (target groups, listeners).
 - Fargate pods use ENIs for networking; these ENIs live in your VPC and can prevent deletion of VPC/subnet resources if not removed first.
-- Grafana connects to EFS via mount targets in the VPC; the mount occurs from pods so EFS must be in the same VPC or peered network.
 
 ---
 
@@ -50,7 +46,6 @@ Internet -> NLB (or ALB) -> Security Group -> Fargate Pod -> EKS Control Plane -
 - IRSA for least-privilege pod permissions.
 - Separate environments via `env/<env>/terraform.tfvars`.
 - Remote state via S3 and DynamoDB (locking) to prevent concurrent modifications.
-- EFS with Access Points to isolate Grafana data and use POSIX user mapping for secure mounts.
 
 ---
 

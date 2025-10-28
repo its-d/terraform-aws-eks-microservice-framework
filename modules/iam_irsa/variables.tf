@@ -22,3 +22,8 @@ variable "oidc_issuer_url" {
   type        = string
   description = "EKS cluster OIDC issuer URL (from module.eks.oidc_issuer_url)"
 }
+
+variable "oidc_provider_arn" {
+  type        = string
+  description = "EKS cluster OIDC provider ARN (from module.eks.oidc_provider_arn)"
+}

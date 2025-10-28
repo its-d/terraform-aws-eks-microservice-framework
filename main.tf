@@ -24,7 +24,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 6.0"
+      version = "~> 5.95"
     }
     helm = {
       source  = "hashicorp/helm"
@@ -33,6 +33,10 @@ terraform {
     kubernetes = {
       source  = "hashicorp/kubernetes"
       version = "~> 2.29"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
     }
   }
 
@@ -44,32 +48,36 @@ terraform {
 Data Source helpers for EKS cluster access
 -------------------------
 */
-data "aws_eks_cluster" "this" {
-  name       = module.eks.cluster_name
-  depends_on = [module.eks]
+resource "null_resource" "write_kubeconfig" {
+  triggers = {
+    cluster = module.eks.cluster_name
+    region  = var.region
+  }
+
+  provisioner "local-exec" {
+    command = "aws eks update-kubeconfig --name ${module.eks.cluster_name} --region ${var.region}"
+  }
 }
 
-data "aws_eks_cluster_auth" "this" {
-  name       = module.eks.cluster_name
-  depends_on = [module.eks]
+data "aws_eks_cluster" "eks" {
+  name = module.eks.cluster_name
 }
 
-/*
--------------------------
-Providers
--------------------------
-*/
+data "aws_eks_cluster_auth" "eks" {
+  name = module.eks.cluster_name
+}
+
 provider "kubernetes" {
-  host                   = data.aws_eks_cluster.this.endpoint
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
-  token                  = data.aws_eks_cluster_auth.this.token
+  host                   = data.aws_eks_cluster.eks.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.eks.token
 }
 
 provider "helm" {
   kubernetes {
-    host                   = data.aws_eks_cluster.this.endpoint
-    cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
-    token                  = data.aws_eks_cluster_auth.this.token
+    host                   = data.aws_eks_cluster.eks.endpoint
+    cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)
+    token                  = data.aws_eks_cluster_auth.eks.token
   }
 }
 
@@ -96,19 +104,16 @@ Module responsible for EKS configuration
 and Fargate Profile setup
 -------------------------
 */
-
 module "eks" {
-  source                  = "./modules/eks/"
-  identifier              = var.identifier
-  region                  = var.region
-  common_tags             = local.common_tags
-  private_subnet_ids      = module.vpc.private_subnet_ids
-  cluster_role_arn        = module.iam.cluster_role_arn
-  pod_execution_role_arn  = module.iam.pod_execution_role_arn
-  endpoint_private_access = var.endpoint_private_access
-  endpoint_public_access  = var.endpoint_public_access
-  public_access_cidrs     = var.public_access_cidrs
-  depends_on              = [module.vpc]
+  source                 = "./modules/eks/"
+  identifier             = var.identifier
+  vpc_id                 = module.vpc.vpc_id
+  common_tags            = local.common_tags
+  private_subnet_ids     = module.vpc.private_subnet_ids
+  cluster_role_arn       = module.iam.cluster_role_arn
+  pod_execution_role_arn = module.iam.pod_execution_role_arn
+  public_access_cidrs    = var.public_access_cidrs
+  depends_on             = [module.vpc]
 }
 
 /*
@@ -129,10 +134,11 @@ for Service Accounts (IRSA)
 -------------------------
 */
 module "iam_irsa" {
-  source          = "./modules/iam_irsa"
-  common_tags     = local.common_tags
-  oidc_issuer_url = module.eks.oidc_issuer_url
-  depends_on      = [module.eks]
+  source            = "./modules/iam_irsa"
+  common_tags       = local.common_tags
+  oidc_issuer_url   = module.eks.oidc_issuer_url
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  depends_on        = [module.eks]
 }
 
 /*
@@ -150,28 +156,12 @@ module "security" {
 
 /*
 -------------------------
-Module responsible for Storage (EFS)
--------------------------
-*/
-module "storage" {
-  source                = "./modules/storage"
-  identifier            = var.identifier
-  private_subnet_ids    = module.vpc.private_subnet_ids
-  efs_security_group_id = module.security.efs_sg_id
-  common_tags           = local.common_tags
-}
-
-/*
--------------------------
 Module responsible for Grafana deployment
 -------------------------
 */
 module "grafana" {
   source                 = "./modules/grafana"
-  identifier             = var.identifier
   region                 = var.region
-  efs_file_system_id     = module.storage.efs_file_system_id
-  efs_access_point_id    = module.storage.efs_access_point_id
   grafana_admin_password = var.grafana_admin_password
   grafana_admin_user     = var.grafana_admin_user
   depends_on = [

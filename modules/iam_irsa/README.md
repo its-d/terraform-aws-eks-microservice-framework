@@ -5,7 +5,7 @@ Purpose
 
 What this module provides
 - IAM role(s) with trust policies bound to the EKS OIDC provider
-- Optional inline/managed policies scoped to the controller's needs (e.g., ELB actions, SSM/EFS access)
+- Optional inline/managed policies scoped to the controller's needs (e.g., ELB actions, SSM access)
 - Guidance for annotating Kubernetes service accounts to use the created roles
 
 Quick usage (root wiring)

@@ -67,6 +67,7 @@ resource "helm_release" "aws_load_balancer_controller" {
   depends_on = [
     # kubernetes_service_account.alb_sa,
     module.iam_irsa, # IRSA must exist
-    module.eks       # cluster must exist
+    null_resource.write_kubeconfig,
+    module.eks # cluster must exist
   ]
 }

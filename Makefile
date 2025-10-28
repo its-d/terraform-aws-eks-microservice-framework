@@ -1,99 +1,108 @@
 # ==============================
 # Makefile (root-driven Terraform)
 # ==============================
+.ONESHELL:
+SHELL := /bin/bash
 
 ENV    ?= dev
 TFVARS ?= env/$(ENV)/terraform.tfvars
 BACKEND ?= env/$(ENV)/backend.hcl
 TF := terraform
 
-GREEN  := \033[0;32m
-YELLOW := \033[1;33m
-RESET  := \033[0m
-
 # Stops command (plan/apply/destroy) if tfvars/backend files are missing
 _guard_tfvars:
-	@if [ ! -f "$(TFVARS)" ]; then \
-		echo "$(YELLOW)Missing $(TFVARS). Create it or set ENV=<env>$(RESET)"; \
-		exit 1; \
-	fi
+	@{ \
+	  set -euo pipefail; \
+	  if [ ! -f "$(TFVARS)" ]; then \
+	    echo "Missing $(TFVARS). Create it or set ENV=<env>"; \
+	    exit 1; \
+	  fi; \
+	}
 
 # Stops init if backend file is missing
 _guard_backend:
-	@if [ ! -f "$(BACKEND)" ]; then \
-		echo "$(YELLOW)Missing $(BACKEND). Create it (S3/Dynamo backend config) or set ENV=<env>$(RESET)"; \
-		exit 1; \
-	fi
+	@{ \
+	  set -euo pipefail; \
+	  if [ ! -f "$(BACKEND)" ]; then \
+	    echo "Missing $(BACKEND). Create it (S3/Dynamo backend config) or set ENV=<env>"; \
+	    exit 1; \
+	  fi; \
+	}
 
 # Updates destroy process to forcibly clean up K8s/Helm resources first
 _force_k8s_purge:
-	@echo "$(YELLOW)🧨 Forcing local K8s cleanup (Grafana ns/PV/etc)$(RESET)"
-	-@aws eks update-kubeconfig --name "$$(terraform output -raw cluster_name 2>/dev/null)" \
-		--region "$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}" >/dev/null 2>&1 || true
-
-	# Helm releases (ignore if already gone)
-	-@helm -n monitoring uninstall grafana --wait=false >/dev/null 2>&1 || true
-	-@helm -n kube-system uninstall aws-load-balancer-controller --wait=false >/dev/null 2>&1 || true
-
-	# Ingress / svc / deploy / PVCs (don’t wait)
-	-@kubectl -n monitoring delete ingress --all --ignore-not-found --wait=false >/dev/null 2>&1 || true
-	-@kubectl -n monitoring delete svc --all --ignore-not-found --wait=false >/dev/null 2>&1 || true
-	-@kubectl -n monitoring delete deploy --all --ignore-not-found --wait=false >/dev/null 2>&1 || true
-	-@kubectl -n monitoring delete pvc --all --ignore-not-found --wait=false >/dev/null 2>&1 || true
-	-@for pvc in $$(kubectl -n monitoring get pvc -o name 2>/dev/null); do \
-		kubectl -n monitoring patch $$pvc --type=merge -p '{"metadata":{"finalizers":null}}' >/dev/null 2>&1 || true; \
-	done
-
-	# PVs (only the grafana PV by name pattern)
-	-@kubectl get pv -o name 2>/dev/null | grep -E 'grafana-pv' | \
-		xargs -r -n1 kubectl delete --ignore-not-found --wait=false >/dev/null 2>&1 || true
-
-	# Namespace (and strip finalizers if stuck)
-	-@kubectl delete namespace monitoring --ignore-not-found --wait=false >/dev/null 2>&1 || true
-	-@kubectl patch namespace monitoring --type=merge -p '{"spec":{"finalizers":[]}}' >/dev/null 2>&1 || true
+	@{ \
+	  echo "============================> Forcing local K8s cleanup (Grafana ns/PV/etc)"; \
+	  set -euo pipefail; \
+	  CLUSTER="$$(terraform output -raw cluster_name 2>/dev/null || true)"; \
+	  REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}"; \
+	  if [ -z "$$CLUSTER" ]; then \
+	    echo "↪ No cluster_name output; skipping kube cleanup."; \
+	    exit 0; \
+	  fi; \
+	  aws eks update-kubeconfig --name "$$CLUSTER" --region "$$REGION" >/dev/null 2>&1 || true; \
+	  if ! kubectl --request-timeout=5s get ns >/dev/null 2>&1; then \
+	    echo "↪ API not reachable; skipping kube cleanup."; \
+	    exit 0; \
+	  fi; \
+	  helm -n monitoring uninstall grafana --no-hooks --timeout 20s >/dev/null 2>&1 || true; \
+	  helm -n kube-system uninstall aws-load-balancer-controller --no-hooks --timeout 20s >/dev/null 2>&1 || true; \
+	  kubectl -n monitoring delete ingress,svc,deploy,statefulset,job,cronjob,cm,secret --all --ignore-not-found --wait=false >/dev/null 2>&1 || true; \
+	  kubectl -n monitoring delete pod --all --force --grace-period=0 --ignore-not-found >/dev/null 2>&1 || true; \
+	  kubectl -n monitoring delete pvc --all --ignore-not-found --wait=false >/dev/null 2>&1 || true; \
+	  kubectl -n monitoring get pvc -o name 2>/dev/null | xargs -r -n1 -P6 sh -c 'kubectl -n monitoring patch "$$0" --type=merge -p "{\"metadata\":{\"finalizers\":null}}"' >/dev/null 2>&1 || true; \
+	  kubectl get pv -o json 2>/dev/null | jq -r '.items[] | select(.spec.claimRef.namespace=="monitoring") | .metadata.name' | xargs -r -n1 -P6 sh -c 'kubectl delete pv "$$0" --wait=false' >/dev/null 2>&1 || true; \
+	  kubectl get pv -o json 2>/dev/null | jq -r '.items[] | select(.spec.claimRef.namespace=="monitoring") | .metadata.name' | xargs -r -n1 -P6 sh -c 'kubectl patch pv "$$0" --type=merge -p "{\"metadata\":{\"finalizers\":null}}"' >/dev/null 2>&1 || true; \
+	  kubectl delete namespace monitoring --ignore-not-found --wait=false >/dev/null 2>&1 || true; \
+	  if kubectl get ns monitoring -o json >/dev/null 2>&1; then \
+	    kubectl get ns monitoring -o json | jq 'del(.spec.finalizers)' | kubectl replace --raw "/api/v1/namespaces/monitoring/finalize" -f - >/dev/null 2>&1 || true; \
+	  fi; \
+	  echo "============================> K8s cleanup kicked off (non-blocking). Proceeding to AWS purge."; \
+	}
 
 # Removes K8s/Helm resources from Terraform state to avoid errors on destroy
 _state_rm_k8s:
-	@echo "$(YELLOW)🧺 Removing K8s/Helm resources from Terraform state$(RESET)"
-	-@$(TF) state rm module.grafana.helm_release.grafana >/dev/null 2>&1 || true
-	-@$(TF) state rm module.grafana.kubernetes_persistent_volume.grafana_pv >/dev/null 2>&1 || true
-	-@$(TF) state rm module.grafana.kubernetes_persistent_volume_claim.grafana_pvc >/dev/null 2>&1 || true
-	-@$(TF) state rm module.grafana.kubernetes_namespace.monitoring >/dev/null 2>&1 || true
-	-@$(TF) state rm helm_release.aws_load_balancer_controller >/dev/null 2>&1 || true
-	-@$(TF) state rm kubernetes_config_map.aws_logging >/dev/null 2>&1 || true
-	# Fallback: strip any other lingering k8s/helm entries (match module-prefixed too)
-	-@$(TF) state list 2>/dev/null | \
-	  grep -E '(^|\.)(helm_release|kubernetes_)' | xargs -I{} $(TF) state rm {} >/dev/null 2>&1 || true
+	@{ \
+	  echo "🧺 Removing K8s/Helm resources from Terraform state"; \
+	  $(TF) state rm module.grafana.helm_release.grafana >/dev/null 2>&1 || true; \
+	  $(TF) state rm module.grafana.kubernetes_persistent_volume.grafana_pv >/dev/null 2>&1 || true; \
+	  $(TF) state rm module.grafana.kubernetes_persistent_volume_claim.grafana_pvc >/dev/null 2>&1 || true; \
+	  $(TF) state rm module.grafana.kubernetes_namespace.monitoring >/dev/null 2>&1 || true; \
+	  $(TF) state rm helm_release.aws_load_balancer_controller >/dev/null 2>&1 || true; \
+	  $(TF) state rm kubernetes_config_map.aws_logging >/dev/null 2>&1 || true; \
+	  $(TF) state list 2>/dev/null | grep -E '(^|\.)(helm_release|kubernetes_)' | xargs -I{} $(TF) state rm {} >/dev/null 2>&1 || true; \
+	}
 
 # Cleans up leftover AWS network resources (ALBs/ENIs) before destroy
 _aws_net_purge:
-	@echo "$(YELLOW)🧼 Pre-cleaning ALBs & ENIs in this env$(RESET)"
-	# detect region and vpc (fallback-safe)
-	@REGION="$$(terraform output -raw region 2>/dev/null || true)" ; \
-	VPC_ID="$$(terraform output -raw vpc_id 2>/dev/null || true)" ; \
-	[ -z "$$REGION" ] && REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}" ; \
-	echo "  → region=$$REGION vpc=$$VPC_ID" ; \
-	\
-	# delete ALBs first
-	-@aws elbv2 describe-load-balancers --region $$REGION \
-	  --query 'LoadBalancers[?VpcId==`'$$VPC_ID'`].LoadBalancerArn' --output text 2>/dev/null | \
-	  xargs -r -n1 aws elbv2 delete-load-balancer --region $$REGION --load-balancer-arn >/dev/null 2>&1 || true ; \
-	\
-	# then remove leftover ENIs (detach if attached)
-	-@for eni in $$(aws ec2 describe-network-interfaces --region $$REGION \
+	@{ \
+	  echo "============================> Pre-cleaning ALBs & ENIs in this env"; \
+	  set -euo pipefail; \
+	  REGION="$$(terraform output -raw region 2>/dev/null || true)"; \
+	  VPC_ID="$$(terraform output -raw vpc_id 2>/dev/null || true)"; \
+	  [ -z "$$REGION" ] && REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}"; \
+	  echo "  → region=$$REGION vpc=$$VPC_ID"; \
+	  aws elbv2 describe-load-balancers --region "$$REGION" \
+	    --query 'LoadBalancers[?VpcId==`'$$VPC_ID'`].LoadBalancerArn' --output text 2>/dev/null | \
+	    xargs -r -n1 aws elbv2 delete-load-balancer --region "$$REGION" --load-balancer-arn >/dev/null 2>&1 || true; \
+	  for eni in $$(aws ec2 describe-network-interfaces --region "$$REGION" \
 	      --filters Name=vpc-id,Values=$$VPC_ID \
 	      --query 'NetworkInterfaces[].{Id:NetworkInterfaceId,Att:Attachment.AttachmentId}' \
 	      --output text 2>/dev/null); do \
-	    set -- $$eni; ENI=$$1; ATT=$$2; \
-	    if [ "$$ATT" != "None" ] && [ -n "$$ATT" ]; then \
-	      aws ec2 detach-network-interface --region $$REGION --attachment-id $$ATT >/dev/null 2>&1 || true; \
+	    set -- $$eni; \
+	    ENI="$${1:-}"; \
+	    ATT="$${2:-}"; \
+	    [ -z "$$ENI" ] && continue; \
+	    if [ -n "$$ATT" ] && [ "$$ATT" != "None" ]; then \
+	      aws ec2 detach-network-interface --region "$$REGION" --attachment-id "$$ATT" >/dev/null 2>&1 || true; \
 	    fi; \
-	    aws ec2 delete-network-interface --region $$REGION --network-interface-id $$ENI >/dev/null 2>&1 || true; \
-	  done
+	    aws ec2 delete-network-interface --region "$$REGION" --network-interface-id "$$ENI" >/dev/null 2>&1 || true; \
+	  done; \
+	}
 
 # Currently there's an underlying dependency bug with VPC deletion in TF; this removes it from state to allow additional deletion step after destroy
 _state_rm_vpc:
-	@echo "$(YELLOW)🧺 Removing VPC from Terraform state (and caching VPC ID)$(RESET)"
+	@echo "============================> Removing VPC from Terraform state (and caching VPC ID)"
 	@set -eu; \
 	REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}"; \
 	VPC_ID="$$(TF_IN_AUTOMATION=1 $(TF) output -raw vpc_id 2>/dev/null || true)"; \
@@ -113,11 +122,11 @@ _state_rm_vpc:
 _force_delete_vpc:
 	@set -euo pipefail; \
 	VPC_ID="$$(cat .last_vpc_id 2>/dev/null || true)"; \
-	[ -z "$$VPC_ID" ] && { echo "$(YELLOW)↪ No cached VPC ID — skipping.$(RESET)"; exit 0; }; \
+	[ -z "$$VPC_ID" ] && { echo "↪ No cached VPC ID — skipping."; exit 0; }; \
 	REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}"; \
 	# If VPC doesn't exist anymore, exit immediately
 	if ! aws ec2 describe-vpcs --vpc-ids "$$VPC_ID" --region "$$REGION" >/dev/null 2>&1; then \
-	  echo "$(YELLOW)ℹ️  VPC $$VPC_ID already deleted or not found.$(RESET)"; \
+	  echo "============================>  VPC $$VPC_ID already deleted or not found."; \
 	  rm -f .last_vpc_id >/dev/null 2>&1 || true; \
 	  exit 0; \
 	fi; \
@@ -125,22 +134,22 @@ _force_delete_vpc:
 	for i in $$(seq 1 5); do \
 	  if aws ec2 delete-vpc --region "$$REGION" --vpc-id "$$VPC_ID" >/dev/null 2>&1; then \
 	    rm -f .last_vpc_id >/dev/null 2>&1 || true; \
-	    echo "$(GREEN)✅ VPC $$VPC_ID deleted$(RESET)"; \
+	    echo "============================> VPC $$VPC_ID deleted"; \
 	    exit 0; \
 	  fi; \
 	  sleep 3; \
 	done; \
-	echo "$(YELLOW)ℹ️  Skipped VPC $$VPC_ID — already removed or pending AWS cleanup.$(RESET)"
+	echo "============================>  Skipped VPC $$VPC_ID — already removed or pending AWS cleanup."
 
 # Confirms IP to use for EKS API access and saves to .make_env_public_access
 _confirm_ip:
 	@IP="$$(curl -s https://checkip.amazonaws.com)"; \
 	TFVARS_IP="$$(grep -E 'public_access_cidrs' $(TFVARS) 2>/dev/null | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/32' | head -n1)"; \
-	echo "🌐 Detected current public IP: $$IP"; \
+	echo "============================> Detected current public IP: $$IP"; \
 	if [ -n "$$TFVARS_IP" ]; then \
-	  echo "🗂  IP configured in $(TFVARS): $$TFVARS_IP"; \
+	  echo "============================> IP configured in $(TFVARS): $$TFVARS_IP"; \
 	else \
-	  echo "⚠️  No public_access_cidrs found in $(TFVARS)"; \
+	  echo "============================>  No public_access_cidrs found in $(TFVARS)"; \
 	fi; \
 	read -r -p "Use the IP from $(TFVARS) (y/N)? " USE_TFVARS; \
 	case "$$USE_TFVARS" in \
@@ -149,34 +158,34 @@ _confirm_ip:
 	     [ -z "$$CIDR" ] && CIDR="$$IP/32";; \
 	esac; \
 	printf "export TF_VAR_public_access_cidrs='[\"%s\"]'\n" "$$CIDR" > .make_env_public_access; \
-	echo "✅ Will allow $$CIDR (saved to .make_env_public_access)"
+	echo "============================> Will allow $$CIDR (saved to .make_env_public_access)"
 
 # Initializes Terraform with backend and all modules found in modules/ (Not including .* dirs)
 init: _guard_backend
-	@echo "$(YELLOW)🚀 Initializing Terraform (root) with backend $(BACKEND)$(RESET)"
+	@echo "🚀 Initializing Terraform (root) with backend $(BACKEND)"
 	@$(TF) init -upgrade -reconfigure -backend-config=$(BACKEND)
-	@echo "$(YELLOW)🔁 Initializing all modules...$(RESET)"
+	@echo "============================> Initializing all modules..."
 	@for dir in $$(find modules -mindepth 1 -maxdepth 1 -type d ! -name ".*"); do \
-		echo "$(YELLOW)→ Initializing $$dir$(RESET)"; \
+		echo "→ Initializing $$dir"; \
 		cd $$dir && $(TF) init -upgrade >/dev/null && cd - >/dev/null; \
 	done
-	@echo "$(YELLOW)✅ All Terraform modules initialized$(RESET)"
+	@echo "============================> All Terraform modules initialized"
 
 # Terraform plan using env tfvars and outputs to plan file
 plan: _guard_tfvars
-	@echo "$(YELLOW)🧠 Planning for $(ENV)$(RESET)"
+	@echo "============================> Planning for $(ENV)"
 	$(MAKE) _confirm_ip
 	@. ./.make_env_public_access; \
 	$(TF) plan -var-file=$(TFVARS) -out=plan-$(ENV).tfplan
 
 # Applies previously generated plan file
 apply:
-	@echo "$(GREEN)🚀 Applying plan for $(ENV)$(RESET)"
+	@echo "============================> Applying plan for $(ENV)"
 	$(TF) apply "plan-$(ENV).tfplan"
 
 # Destroy resources for the selected environment including above pre-cleanup steps
 destroy: _guard_tfvars
-	@echo "$(YELLOW)💣 Destroying $(ENV)$(RESET)"
+	@echo "============================> Destroying $(ENV)"
 	$(MAKE) -s _aws_net_purge
 	$(MAKE) -s _force_k8s_purge
 	$(MAKE) -s _state_rm_k8s
@@ -186,7 +195,7 @@ destroy: _guard_tfvars
 
 # Validates Terraform configuration syntax at root
 validate:
-	@echo "$(YELLOW)🔍 Validating$(RESET)"
+	@echo "============================> Validating"
 	$(TF) validate
 
 # ==============================
@@ -195,17 +204,17 @@ validate:
 
 # Formats your Terraform files
 fmt:
-	@echo "$(YELLOW)🧹 Formatting$(RESET)"
+	@echo "============================> Formatting"
 	$(TF) fmt -recursive
 
 # Runs pre-commit hooks against all files
 lint:
-	@echo "$(YELLOW)🔎 Running pre-commit hooks$(RESET)"
+	@echo "============================> Running pre-commit hooks"
 	pre-commit run --all-files
 
 # Generates terraform-docs for all modules in modules/
 docs:
-	@echo "$(YELLOW)📘 Generating module documentation$(RESET)"
+	@echo "============================> Generating module documentation"
 	@for d in modules/*; do \
 	  if [ -d "$$d" ]; then \
 	    echo "==> $$d"; \
@@ -219,12 +228,12 @@ docs:
 
 # Cleans up local Terraform files
 clean:
-	@echo "$(YELLOW)🧽 Cleaning$(RESET)"
+	@echo "============================> Cleaning"
 	rm -rf .terraform .terraform.lock.hcl plan-*.tfplan
 
 # Displays help information
 help:
-	@echo "$(GREEN)Available targets:$(RESET)"
+	@echo "Available targets:"
 	@echo ""
 	@echo "Core:"
 	@echo "  init        - Initialize Terraform backend/config for ENV using $(BACKEND)"

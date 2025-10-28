@@ -11,11 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-variable "region" {
+variable "vpc_id" {
   type        = string
-  description = "AWS Region to be associated with the deployment."
-  default     = "us-east-1"
+  description = "The ID of the VPC where the EKS cluster will be deployed."
+
 }
 
 variable "common_tags" {
@@ -43,18 +42,6 @@ variable "pod_execution_role_arn" {
   type        = string
   description = "The ARN of the IAM role for EKS pod execution."
 
-}
-
-variable "endpoint_private_access" {
-  type        = bool
-  description = "Whether the EKS API server is reachable from within the VPC"
-  default     = true
-}
-
-variable "endpoint_public_access" {
-  type        = bool
-  description = "Whether the EKS API server is reachable from the internet"
-  default     = true
 }
 
 variable "public_access_cidrs" {

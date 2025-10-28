@@ -18,93 +18,53 @@
 * Description: Local values for the ALB Controller IAM Role for Service Accounts (IRSA).
 * Variables:
   - oidc_issuer_url
+  - oidc_provider_arn
+  - common_tags
 ----------------------------
 */
+
 locals {
-  oidc_issuer_host = replace(var.oidc_issuer_url, "https://", "")
-  alb_namespace    = "kube-system"
-  alb_serviceacct  = "aws-load-balancer-controller"
+  issuer_host  = replace(var.oidc_issuer_url, "https://", "")
+  sa_namespace = "kube-system"
+  sa_name      = "aws-load-balancer-controller"
+  sa_subject   = "system:serviceaccount:${local.sa_namespace}:${local.sa_name}"
 }
 
 /*
--------------------------
-* Data: TLS Certificate for OIDC
-* Description: Retrieves the TLS certificate for the OIDC issuer URL.
+----------------------------
+* Resources: ALB Controller IRSA
+* Description: IAM Role and Policy for the AWS Load Balancer Controller using IRSA.
 * Variables:
-  - oidc_issuer_url
--------------------------
-*/
-data "tls_certificate" "eks_oidc" {
-  url = var.oidc_issuer_url
-}
-
-/*
--------------------------
-* Resource: EKS OIDC Provider
-* Description: Creates an IAM OIDC provider for the EKS cluster.
-* Variables:
-  - oidc_issuer_url
+  - oidc_provider_arn
   - common_tags
--------------------------
-*/
-resource "aws_iam_openid_connect_provider" "eks_oidc_provider" {
-  url             = var.oidc_issuer_url
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.tls_certificate.eks_oidc.certificates[0].sha1_fingerprint]
-  tags            = var.common_tags
-}
-
-/*
--------------------------
-* Data: ALB Controller IRSA Trust Policy
-* Description: Creates an IAM policy document for the ALB Controller IAM Role for Service Accounts (IRSA) trust relationship.
-* Variables:
-  - oidc_issuer_host
-  - alb_namespace
-  - alb_serviceacct
--------------------------
-*/
-data "aws_iam_policy_document" "irsa_trust" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-    principals {
-      type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.eks_oidc_provider.arn]
-    }
-    condition {
-      test     = "StringEquals"
-      variable = "${local.oidc_issuer_host}:aud"
-      values   = ["sts.amazonaws.com"]
-    }
-    condition {
-      test     = "StringEquals"
-      variable = "${local.oidc_issuer_host}:sub"
-      values   = ["system:serviceaccount:${local.alb_namespace}:${local.alb_serviceacct}"]
-    }
-  }
-}
-
-/*
--------------------------
-* Resource: ALB Controller IAM Role for Service Accounts (IRSA)
-* Description: Creates an IAM role for the ALB Controller with the necessary trust relationship for IRSA.
-* Variables:
-  - common_tags
--------------------------
+----------------------------
 */
 resource "aws_iam_role" "alb_irsa" {
-  name               = "alb-controller-irsa"
-  assume_role_policy = data.aws_iam_policy_document.irsa_trust.json
-  tags               = var.common_tags
+  name = "alb-controller-irsa"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Principal = { Federated = var.oidc_provider_arn }
+      Condition = {
+        StringEquals = {
+          "${local.issuer_host}:aud" = "sts.amazonaws.com"
+          "${local.issuer_host}:sub" = local.sa_subject
+        }
+      }
+    }]
+  })
+  tags = var.common_tags
 }
 
+
 /*
--------------------------
-* Resource: ALB Controller IAM Policy Attachment
-* Description: Attaches the necessary IAM policy to the ALB Controller IAM Role for Service Accounts (IRSA).
+----------------------------
+* Resource: ALB Controller IAM Policy and Attachment
+* Description: IAM Policy and Attachment for the AWS Load Balancer Controller.
 * Variables: None
--------------------------
+----------------------------
 */
 resource "aws_iam_policy" "alb_controller" {
   name   = "AWSLoadBalancerControllerIAMPolicy"
@@ -112,11 +72,11 @@ resource "aws_iam_policy" "alb_controller" {
 }
 
 /*
--------------------------
+----------------------------
 * Resource: ALB Controller IAM Role Policy Attachment
-* Description: Attaches the ALB Controller IAM policy to the ALB Controller IAM Role for Service Accounts (IRSA).
+* Description: Attaches the IAM Policy to the ALB Controller IRSA Role.
 * Variables: None
--------------------------
+----------------------------
 */
 resource "aws_iam_role_policy_attachment" "alb_attach" {
   role       = aws_iam_role.alb_irsa.name
