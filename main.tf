@@ -54,17 +54,21 @@ resource "null_resource" "write_kubeconfig" {
     region  = var.region
   }
 
+  depends_on = [module.eks]
+
   provisioner "local-exec" {
     command = "aws eks update-kubeconfig --name ${module.eks.cluster_name} --region ${var.region}"
   }
 }
 
 data "aws_eks_cluster" "eks" {
-  name = module.eks.cluster_name
+  name       = module.eks.cluster_name
+  depends_on = [module.eks]
 }
 
 data "aws_eks_cluster_auth" "eks" {
-  name = module.eks.cluster_name
+  name       = module.eks.cluster_name
+  depends_on = [module.eks]
 }
 
 provider "kubernetes" {

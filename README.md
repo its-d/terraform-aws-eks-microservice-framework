@@ -6,7 +6,7 @@ A modular, production-ready Terraform framework for deploying Amazon EKS and run
 
 ## Project / Goal / Who this is for
 
-- Goal: Provide a repeatable, auditable baseline to provision a full EKS platform (Fargate profiles), CI-friendly Terraform modules, monitoring (Grafana with ephemral storage), and load balancing integration (ALB/NLB) using opinionated, modular Terraform.
+- Goal: Provide a repeatable, auditable baseline to provision a full EKS platform (Fargate profiles), CI-friendly Terraform modules, monitoring (Grafana with ephemeral storage), and load balancing integration (ALB/NLB) using opinionated, modular Terraform.
 - Who it's for: Infrastructure engineers, platform teams, and DevOps who need a production-oriented starting point for microservice deployments on AWS EKS with least-privilege IAM and clear operational procedures.
 - Typical uses: PoC, staging, and production clusters where Terraform manages infrastructure and provides an out-of-the-box Grafana that persists dashboards and plugins across redeploys.
 
@@ -204,7 +204,7 @@ Secrets & recommended pattern
 
 ## Grafana (ready-to-use) — primary feature
 
-This repository includes a Grafana deployment with ephemral storage and exposed to Grafana.
+This repository includes a Grafana deployment with ephemeral storage and exposed to Grafana.
 
 How to confirm (after apply)
 ```bash

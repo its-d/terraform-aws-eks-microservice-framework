@@ -43,7 +43,6 @@ resource "helm_release" "aws_load_balancer_controller" {
     value = module.vpc.vpc_id
   }
 
-  # Use our pre-created ServiceAccount with IRSA
   set {
     name  = "serviceAccount.create"
     value = "true"
@@ -58,16 +57,14 @@ resource "helm_release" "aws_load_balancer_controller" {
     value = module.iam_irsa.alb_irsa_role_arn
   }
 
-  # Helpful default for Fargate; you also set target type per Service via annotation
   set {
     name  = "defaultTargetType"
     value = "ip"
   }
 
   depends_on = [
-    # kubernetes_service_account.alb_sa,
-    module.iam_irsa, # IRSA must exist
+    module.iam_irsa,
     null_resource.write_kubeconfig,
-    module.eks # cluster must exist
+    module.eks
   ]
 }
