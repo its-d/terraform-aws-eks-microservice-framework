@@ -184,15 +184,15 @@ Minimum fields (from terraform.tfvars.example and module variables):
 - `owner` — owner tag / contact
 - `identifier` — short prefix for resource names
 - `public_access_cidrs` — list of CIDRs allowed for public API access
-- `grafana_admin_user` — Grafana admin username
-- `grafana_admin_password` — Grafana admin password (sensitive)
+- `grafana_admin_user_arn` — Arn for Secrets Manager Value (Grafana Admin)
+- `grafana_admin_pwd_arn` — Arn for Secrets Manager Value (Grafana Password)
 
 Security:
 - Never commit real credentials. Add `env/*` to `.gitignore` to avoid accidental commits.
 
 Secrets & recommended pattern
 - For production / public usage, store sensitive values (Grafana admin password, etc.) in SSM Parameter Store or Secrets Manager and reference them in Terraform (or inject them via CI secrets). Example pattern:
-  - Put secret into SSM: `aws ssm put-parameter --name "/project/dev/grafana_admin_password" --type "SecureString" --value "<SECRET>"`
+  - Put secret into SSM: `aws ssm put-parameter --name "/project/dev/grafana_admin_pwd_arn" --type "SecureString" --value "<SECRET>"`
   - Refer to SSM via Terraform data source `aws_ssm_parameter` with `with_decryption = true`.
 
 ---

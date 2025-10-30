@@ -15,3 +15,15 @@ output "alb_sg_id" {
   description = "Security Group ID to attach to the NLB"
   value       = aws_security_group.alb_sg.id
 }
+
+output "grafana_user" {
+  description = "Grafana admin user"
+  value       = local.grafana_admin_user
+  sensitive   = true
+}
+
+output "grafana_password" {
+  description = "Grafana admin password"
+  value       = local.grafana_admin_pwd
+  sensitive   = true
+}

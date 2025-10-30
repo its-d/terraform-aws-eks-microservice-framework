@@ -154,6 +154,8 @@ module "security" {
   source                    = "./modules/security"
   vpc_id                    = module.vpc.vpc_id
   cluster_security_group_id = module.eks.cluster_security_group_id
+  grafana_user_arn          = var.grafana_admin_user_arn
+  grafana_pwd_arn           = var.grafana_admin_pwd_arn
   common_tags               = local.common_tags
   depends_on                = [module.eks]
 }
@@ -166,8 +168,8 @@ Module responsible for Grafana deployment
 module "grafana" {
   source                 = "./modules/grafana"
   region                 = var.region
-  grafana_admin_password = var.grafana_admin_password
-  grafana_admin_user     = var.grafana_admin_user
+  grafana_admin_password = module.security.grafana_password
+  grafana_admin_user     = module.security.grafana_user
   depends_on = [
     module.eks,
     helm_release.aws_load_balancer_controller

@@ -73,3 +73,25 @@ resource "aws_security_group_rule" "csg_rule" {
   source_security_group_id = aws_security_group.alb_sg.id
   description              = "Allows ALB to Pods on 3000/tcp"
 }
+
+/*
+------------------------
+* Resource: Grafana Admin and Password Secrets
+* Description: Secret for Grafana admin user/password
+* Variables:
+  - grafana_user_arn
+  - grafana_pwd_arn
+------------------------
+*/
+data "aws_secretsmanager_secret_version" "sm_user_version" {
+  secret_id = var.grafana_user_arn
+}
+
+data "aws_secretsmanager_secret_version" "sm_pwd_version" {
+  secret_id = var.grafana_pwd_arn
+}
+
+locals {
+  grafana_admin_user = sensitive(data.aws_secretsmanager_secret_version.sm_user_version.secret_string)
+  grafana_admin_pwd  = sensitive(data.aws_secretsmanager_secret_version.sm_pwd_version.secret_string)
+}

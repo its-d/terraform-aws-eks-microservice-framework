@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.0.0] - 2025-10-24
+## [v0.1.0] - 2025-10-24
 ### 🎯 Initial Stable Release
 - Finalized Terraform AWS EKS Microservice Framework
 - Supports:
@@ -13,3 +13,10 @@
   - Full documentation under `/docs` for setup, architecture, troubleshooting, and contributing
 - Verified clean apply/destroy cycles
 - Ready for multi-environment use
+
+----
+
+## [v0.2.0] - 2025-10-30
+### 🎯 Initial Stable Release
+- Added Secrets Manager Import for Grafana Credentials.
+  - Values are plugged into Secrets Manager via AWS Console, and Secrets are imported into the Grafana Module
