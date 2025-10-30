@@ -50,7 +50,6 @@ resource "helm_release" "grafana" {
     value = "false"
   }
 
-  # Health probes
   set {
     name  = "readinessProbe.enabled"
     value = "true"
@@ -76,7 +75,6 @@ resource "helm_release" "grafana" {
     value = "10"
   }
 
-  # Service definition
   set {
     name  = "service.type"
     value = "ClusterIP"
@@ -90,7 +88,6 @@ resource "helm_release" "grafana" {
     value = "3000"
   }
 
-  # Admin credentials
   set {
     name  = "adminUser"
     value = var.grafana_admin_user
@@ -100,7 +97,6 @@ resource "helm_release" "grafana" {
     value = var.grafana_admin_password
   }
 
-  # Service account for Grafana pods
   set {
     name  = "serviceAccount.create"
     value = "true"
@@ -110,7 +106,6 @@ resource "helm_release" "grafana" {
     value = "grafana"
   }
 
-  # Region for environment variable
   set {
     name  = "env.AWS_REGION"
     value = var.region
