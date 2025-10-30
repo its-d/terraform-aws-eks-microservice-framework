@@ -39,13 +39,12 @@ variable "public_access_cidrs" {
   default     = ["0.0.0.0/0"]
 }
 
-variable "grafana_admin_password" {
+variable "grafana_admin_user_arn" {
+  description = "ARN of the secret storing the Grafana admin username"
   type        = string
-  description = "Grafana admin password"
-  sensitive   = true
 }
 
-variable "grafana_admin_user" {
+variable "grafana_admin_pwd_arn" {
+  description = "ARN of the secret storing the Grafana admin password"
   type        = string
-  description = "Grafana admin username"
 }

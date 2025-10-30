@@ -33,3 +33,13 @@ variable "cluster_security_group_id" {
   description = "EKS Cluster Security Group ID to allow access from the NLB"
   type        = string
 }
+
+variable "grafana_user_arn" {
+  description = "ARN of the secret storing the Grafana admin username"
+  type        = string
+}
+
+variable "grafana_pwd_arn" {
+  description = "ARN of the secret storing the Grafana admin password"
+  type        = string
+}
