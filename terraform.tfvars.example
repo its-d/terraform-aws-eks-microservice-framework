@@ -5,10 +5,11 @@
 # and fill in the placeholders. Do NOT commit real credentials or secrets.
 ###############################################################################
 
-region                  = "us-east-1"          # AWS region where the EKS cluster will be deployed
-environment             = "dev"                # Environment name (e.g., dev, staging, prod)
-owner                   = "YOUR_NAME_HERE"     # Used for tagging and ownership tracking
-identifier              = "PROJECT_PREFIX"     # Short prefix for resource names (e.g., g-dev, sample, test)
-public_access_cidrs     = ["YOUR_IP/32"]       # Restrict access to your IP (e.g., ["123.45.67.89/32"])
-grafana_admin_user_arn  = "arn"                # Grafana admin user Secret ARN
-grafana_admin_pwd_arn   = "arn"                # Grafana admin password Secret ARN
+region                      = "us-east-1"      # AWS region where the EKS cluster will be deployed
+environment                 = "dev"            # Environment name (e.g., dev, staging, prod)
+owner                       = "YOUR_NAME_HERE" # Used for tagging and ownership tracking
+identifier                  = "PROJECT_PREFIX" # Short prefix for resource names (e.g., g-dev, sample, test)
+public_access_cidrs         = ["YOUR_IP/32"]   # Restrict access to your IP (e.g., ["123.45.67.89/32"])
+grafana_admin_user_arn      = "arn"            # Grafana admin user Secret ARN
+grafana_admin_pwd_arn       = "arn"            # Grafana admin password Secret ARN
+self_signed_certificate_arn = "arn"            # Certificate for HTTPS

@@ -59,7 +59,7 @@ _force_k8s_purge:
 # Removes K8s/Helm resources from Terraform state to avoid errors on destroy
 _state_rm_k8s:
 	@{ \
-	  echo "🧺 Removing K8s/Helm resources from Terraform state"; \
+	  echo "============================> Removing K8s/Helm resources from Terraform state"; \
 	  $(TF) state rm module.grafana.helm_release.grafana >/dev/null 2>&1 || true; \
 	  $(TF) state rm module.grafana.kubernetes_namespace.monitoring >/dev/null 2>&1 || true; \
 	  $(TF) state rm helm_release.aws_load_balancer_controller >/dev/null 2>&1 || true; \
@@ -99,9 +99,11 @@ _state_rm_vpc:
 	@echo "============================> Removing VPC from Terraform state (and caching VPC ID)"
 	@set -eu; \
 	REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}"; \
+	IDENTIFIER="$$(TF_IN_AUTOMATION=1 $(TF) output -raw identifier 2>/dev/null || echo "main")"; \
+	CLUSTER_NAME="$${IDENTIFIER}-eks-cluster"; \
 	VPC_ID="$$(TF_IN_AUTOMATION=1 $(TF) output -raw vpc_id 2>/dev/null || true)"; \
 	if [ -z "$$VPC_ID" ] || ! echo "$$VPC_ID" | grep -q '^vpc-'; then \
-	  VPC_ID="$$(aws eks describe-cluster --region $$REGION --name final-eks-cluster \
+	  VPC_ID="$$(aws eks describe-cluster --region $$REGION --name $$CLUSTER_NAME \
 	    --query 'cluster.resourcesVpcConfig.vpcId' --output text 2>/dev/null || true)"; \
 	fi; \
 	if echo "$$VPC_ID" | grep -q '^vpc-'; then \
@@ -114,6 +116,7 @@ _state_rm_vpc:
 
 # Force deletes the VPC after destroy by attempting deletion multiple times (to allow for dependency cleanup)
 _force_delete_vpc:
+	@echo "============================> Forcibly deleting VPC from AWS (if still exists)" \
 	@set -euo pipefail; \
 	VPC_ID="$$(cat .last_vpc_id 2>/dev/null || true)"; \
 	[ -z "$$VPC_ID" ] && { echo "↪ No cached VPC ID — skipping."; exit 0; }; \

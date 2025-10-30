@@ -27,13 +27,13 @@ resource "aws_security_group" "alb_sg" {
   description = "Security group for ALB fronting EKS Fargate services"
   vpc_id      = var.vpc_id
 
-  ingress {
-    description = "Allow HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = var.allowed_cidrs
-  }
+  # ingress {
+  #   description = "Allow HTTP"
+  #   from_port   = 80
+  #   to_port     = 80
+  #   protocol    = "tcp"
+  #   cidr_blocks = var.allowed_cidrs
+  # }
 
   ingress {
     description = "Allow HTTPS"

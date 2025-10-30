@@ -166,10 +166,11 @@ Module responsible for Grafana deployment
 -------------------------
 */
 module "grafana" {
-  source                 = "./modules/grafana"
-  region                 = var.region
-  grafana_admin_password = module.security.grafana_password
-  grafana_admin_user     = module.security.grafana_user
+  source                      = "./modules/grafana"
+  region                      = var.region
+  grafana_admin_password      = module.security.grafana_password
+  grafana_admin_user          = module.security.grafana_user
+  self_signed_certificate_arn = var.self_signed_certificate_arn
   depends_on = [
     module.eks,
     helm_release.aws_load_balancer_controller

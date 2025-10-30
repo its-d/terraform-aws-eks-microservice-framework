@@ -30,3 +30,9 @@ variable "region" {
   description = "The AWS region where the resources are deployed."
 
 }
+
+variable "self_signed_certificate_arn" {
+  description = "ARN of the secret storing the TLS certificate for the ALB"
+  type        = string
+
+}

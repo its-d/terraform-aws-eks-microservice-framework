@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-############################################
-# Helm release: AWS Load Balancer Controller
-# - Runs in kube-system on Fargate (your Fargate profile has the selector)
-# - Uses the ServiceAccount above (so set serviceAccount.create=false)
-############################################
+/*
+-------------------------
+Helm release: AWS Load Balancer Controller
+- Runs in kube-system on Fargate (your Fargate profile has the selector)
+- Uses the ServiceAccount above (so set serviceAccount.create=false)
+- Variables:
+  - region
+-------------------------
+*/
 resource "helm_release" "aws_load_balancer_controller" {
   name       = "aws-load-balancer-controller"
   namespace  = "kube-system"

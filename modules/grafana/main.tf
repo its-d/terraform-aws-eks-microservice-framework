@@ -44,11 +44,13 @@ resource "helm_release" "grafana" {
   atomic          = true
   cleanup_on_fail = true
 
+
   set {
     name  = "persistence.enabled"
     value = "false"
   }
 
+  # Health probes
   set {
     name  = "readinessProbe.enabled"
     value = "true"
@@ -61,7 +63,6 @@ resource "helm_release" "grafana" {
     name  = "readinessProbe.periodSeconds"
     value = "10"
   }
-
   set {
     name  = "livenessProbe.enabled"
     value = "true"
@@ -75,6 +76,7 @@ resource "helm_release" "grafana" {
     value = "10"
   }
 
+  # Service definition
   set {
     name  = "service.type"
     value = "ClusterIP"
@@ -88,6 +90,7 @@ resource "helm_release" "grafana" {
     value = "3000"
   }
 
+  # Admin credentials
   set {
     name  = "adminUser"
     value = var.grafana_admin_user
@@ -97,6 +100,7 @@ resource "helm_release" "grafana" {
     value = var.grafana_admin_password
   }
 
+  # Service account for Grafana pods
   set {
     name  = "serviceAccount.create"
     value = "true"
@@ -105,6 +109,8 @@ resource "helm_release" "grafana" {
     name  = "serviceAccount.name"
     value = "grafana"
   }
+
+  # Region for environment variable
   set {
     name  = "env.AWS_REGION"
     value = var.region
@@ -123,21 +129,37 @@ resource "helm_release" "grafana" {
     value = "alb"
   }
   set {
-    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/target-type"
-    value = "ip"
-  }
-  set {
     name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/scheme"
     value = "internet-facing"
   }
   set {
-    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/listen-ports"
-    value = "[{\"HTTP\":80}]"
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/target-type"
+    value = "ip"
   }
+
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/certificate-arn"
+    value = var.self_signed_certificate_arn
+  }
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/listen-ports"
+    value = "[{\"HTTPS\":443}]"
+  }
+
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/backend-protocol"
+    value = "HTTP"
+  }
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/healthcheck-protocol"
+    value = "HTTP"
+  }
+
   set {
     name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/healthcheck-path"
     value = "/api/health"
   }
+
   set {
     name  = "ingress.path"
     value = "/"
