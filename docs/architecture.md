@@ -19,15 +19,11 @@
    - Configure IRSA (IAM Roles for Service Accounts) for controllers such as the AWS Load Balancer Controller and Grafana.
    - Keeps permissions scoped to the minimum needed.
 
-4. Security Module
-   - Creates security groups used by load balancers and pods.
-   - Defines ingress/egress rules used by the NLB/ALB and application ports.
-
-5. AWS Load Balancer Controller (Helm via Terraform)
+4. AWS Load Balancer Controller (Helm via Terraform)
    - Deploys controller that converts Kubernetes Service/Ingress resources into AWS ELB resources (ALB/NLB).
    - Uses IRSA for permissions to manage ELB resources.
 
-6. Monitoring: Grafana (Ready-to-use)
+5. Monitoring: Grafana (Ready-to-use)
    - Grafana is deployed as part of the stack.
 
 ---

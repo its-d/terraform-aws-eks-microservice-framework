@@ -13,6 +13,29 @@
 # limitations under the License.
 
 /*
+------------------------
+* Resource: Grafana Admin and Password Secrets
+* Description: Secret for Grafana admin user/password
+* Variables:
+  - grafana_user_arn
+  - grafana_pwd_arn
+------------------------
+*/
+data "aws_secretsmanager_secret_version" "sm_user_version" {
+  secret_id = var.grafana_user_arn
+}
+
+data "aws_secretsmanager_secret_version" "sm_pwd_version" {
+  secret_id = var.grafana_pwd_arn
+}
+
+locals {
+  grafana_admin_user = sensitive(data.aws_secretsmanager_secret_version.sm_user_version.secret_string)
+  grafana_admin_pwd  = sensitive(data.aws_secretsmanager_secret_version.sm_pwd_version.secret_string)
+}
+
+
+/*
 -------------------------
 * Resource: Kubernetes Namespace
 * Description: Creates a Kubernetes namespace for monitoring resources.
@@ -43,7 +66,6 @@ resource "helm_release" "grafana" {
   timeout         = 900
   atomic          = true
   cleanup_on_fail = true
-
 
   set {
     name  = "persistence.enabled"
@@ -90,11 +112,11 @@ resource "helm_release" "grafana" {
 
   set {
     name  = "adminUser"
-    value = var.grafana_admin_user
+    value = local.grafana_admin_user
   }
   set {
     name  = "adminPassword"
-    value = var.grafana_admin_password
+    value = local.grafana_admin_pwd
   }
 
   set {
