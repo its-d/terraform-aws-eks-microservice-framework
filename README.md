@@ -331,6 +331,7 @@ cp terraform.tfvars.example env/dev/terraform.tfvars
 
 8. Confirm your IP (REQUIRED)
 ```bash
+# You can set this within the .tfvars to prevent the need to modify it with each run
 make _confirm_ip
 ```
 
