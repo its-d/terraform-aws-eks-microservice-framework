@@ -20,3 +20,10 @@
 ### 🎯 Initial Stable Release
 - Added Secrets Manager Import for Grafana Credentials.
   - Values are plugged into Secrets Manager via AWS Console, and Secrets are imported into the Grafana Module
+
+----
+
+## [v0.3.0] - 2025-11-02
+### 🎯 Initial Stable Release
+- Added HTTPS functionality to Grafana
+  - `enable_https` is configured in the .tfvars (within env/<directory>) and uses the certificate_arn in .tfvars to configure HTTPS connections
