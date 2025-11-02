@@ -36,3 +36,8 @@ variable "self_signed_certificate_arn" {
   type        = string
 
 }
+
+variable "enable_https" {
+  type    = bool
+  default = false
+}

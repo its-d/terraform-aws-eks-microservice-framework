@@ -56,17 +56,6 @@ _force_k8s_purge:
 	  echo "============================> K8s cleanup kicked off (non-blocking). Proceeding to AWS purge."; \
 	}
 
-# Removes K8s/Helm resources from Terraform state to avoid errors on destroy
-_state_rm_k8s:
-	@{ \
-	  echo "============================> Removing K8s/Helm resources from Terraform state"; \
-	  $(TF) state rm module.grafana.helm_release.grafana >/dev/null 2>&1 || true; \
-	  $(TF) state rm module.grafana.kubernetes_namespace.monitoring >/dev/null 2>&1 || true; \
-	  $(TF) state rm helm_release.aws_load_balancer_controller >/dev/null 2>&1 || true; \
-	  $(TF) state rm kubernetes_config_map.aws_logging >/dev/null 2>&1 || true; \
-	  $(TF) state list 2>/dev/null | grep -E '(^|\.)(helm_release|kubernetes_)' | xargs -I{} $(TF) state rm {} >/dev/null 2>&1 || true; \
-	}
-
 # Cleans up leftover AWS network resources (ALBs/ENIs) before destroy
 _aws_net_purge:
 	@{ \
@@ -185,7 +174,6 @@ destroy: _guard_tfvars
 	@echo "============================> Destroying $(ENV)"
 	$(MAKE) -s _aws_net_purge
 	$(MAKE) -s _force_k8s_purge
-	$(MAKE) -s _state_rm_k8s
 	$(MAKE) -s _state_rm_vpc
 	$(TF) destroy -var-file=$(TFVARS) -refresh=true -lock-timeout=5m
 	$(MAKE) -s _force_delete_vpc

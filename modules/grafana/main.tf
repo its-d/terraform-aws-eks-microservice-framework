@@ -134,11 +134,11 @@ resource "helm_release" "grafana" {
 
   set {
     name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/certificate-arn"
-    value = var.self_signed_certificate_arn
+    value = var.enable_https ? var.self_signed_certificate_arn : ""
   }
   set {
     name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/listen-ports"
-    value = "[{\"HTTPS\":443}]"
+    value = var.enable_https ? "[{\"HTTPS\":443}]" : "[{\"HTTP\":80}]"
   }
 
   set {
