@@ -60,8 +60,3 @@ output "private_subnet_ids" {
   description = "Private subnet IDs used by EKS/Fargate"
   value       = module.vpc.private_subnet_ids
 }
-
-output "alb_sg_id" {
-  description = "Security Group ID to attach to load balancers"
-  value       = module.security.alb_sg_id
-}

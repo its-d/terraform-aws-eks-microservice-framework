@@ -48,3 +48,13 @@ variable "grafana_admin_pwd_arn" {
   description = "ARN of the secret storing the Grafana admin password"
   type        = string
 }
+
+variable "self_signed_certificate_arn" {
+  description = "ARN of the secret storing the TLS certificate for the ALB"
+  type        = string
+}
+
+variable "enable_https" {
+  type    = bool
+  default = false
+}

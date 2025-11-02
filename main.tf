@@ -147,29 +147,16 @@ module "iam_irsa" {
 
 /*
 -------------------------
-Module responsible for Security Groups
--------------------------
-*/
-module "security" {
-  source                    = "./modules/security"
-  vpc_id                    = module.vpc.vpc_id
-  cluster_security_group_id = module.eks.cluster_security_group_id
-  grafana_user_arn          = var.grafana_admin_user_arn
-  grafana_pwd_arn           = var.grafana_admin_pwd_arn
-  common_tags               = local.common_tags
-  depends_on                = [module.eks]
-}
-
-/*
--------------------------
 Module responsible for Grafana deployment
 -------------------------
 */
 module "grafana" {
-  source                 = "./modules/grafana"
-  region                 = var.region
-  grafana_admin_password = module.security.grafana_password
-  grafana_admin_user     = module.security.grafana_user
+  source                      = "./modules/grafana"
+  region                      = var.region
+  enable_https                = var.enable_https
+  grafana_user_arn            = var.grafana_admin_user_arn
+  grafana_pwd_arn             = var.grafana_admin_pwd_arn
+  self_signed_certificate_arn = var.self_signed_certificate_arn
   depends_on = [
     module.eks,
     helm_release.aws_load_balancer_controller

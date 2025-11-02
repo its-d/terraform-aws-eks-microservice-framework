@@ -12,21 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-variable "grafana_admin_user" {
-  description = "Grafana admin username"
-  type        = string
-  sensitive   = true
-}
-
-variable "grafana_admin_password" {
-  description = "Grafana admin password"
-  type        = string
-  sensitive   = true
-
-}
-
 variable "region" {
   type        = string
   description = "The AWS region where the resources are deployed."
 
+}
+
+variable "self_signed_certificate_arn" {
+  description = "ARN of the secret storing the TLS certificate for the ALB"
+  type        = string
+
+}
+
+variable "enable_https" {
+  type    = bool
+  default = false
+}
+
+variable "grafana_user_arn" {
+  description = "ARN of the secret storing the Grafana admin username"
+  type        = string
+}
+
+variable "grafana_pwd_arn" {
+  description = "ARN of the secret storing the Grafana admin password"
+  type        = string
 }

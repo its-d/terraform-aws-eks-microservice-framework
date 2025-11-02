@@ -92,9 +92,10 @@ make init
 3. Confirm your public IP with the repository helper (REQUIRED — see "_confirm_ip"):
    - `make _confirm_ip`
    - This ensures `public_access_cidrs` in your environment tfvars is set to the IP that should be permitted to access the EKS API (prevents accidentally opening public access).
-4. Ensure you have the minimum toolchain installed (Terraform, AWS CLI, kubectl, Helm, Python + pre-commit).
-5. Run: `make init` (or `terraform init -backend-config=backend.hcl`) and ensure init succeeds.
-6. Run: `make plan` then `make apply`.
+4. Create Secrets (Grafana User, Grafana Password) within AWS Secrets Manager (Plain Text Secret) to pass into the .tfvars file
+5. Create Certificate and upload to IAM Certificate Manager or ACM then copy the ARN into the .tfvars (If enabled in .tfvars)
+6. Ensure you have the minimum toolchain installed (Terraform, AWS CLI, kubectl, Helm, Python + pre-commit).
+7. Run: `make init` (or `terraform init -backend-config=backend.hcl`) and ensure init succeeds.
 
 Tip: Use a feature branch and open a PR so CI validates formatting and terraform validation before merging to main.
 
@@ -186,6 +187,8 @@ Minimum fields (from terraform.tfvars.example and module variables):
 - `public_access_cidrs` — list of CIDRs allowed for public API access
 - `grafana_admin_user_arn` — Arn for Secrets Manager Value (Grafana Admin)
 - `grafana_admin_pwd_arn` — Arn for Secrets Manager Value (Grafana Password)
+- `enable_https` - Boolean value (default false) to enable HTTPS on your Grafana Application (If true, needs to be setup with the below configured)
+- `self_signed_certificate_arn` - Arn for HTTPS Certificate (Optional)
 
 Security:
 - Never commit real credentials. Add `env/*` to `.gitignore` to avoid accidental commits.

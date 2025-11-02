@@ -13,6 +13,29 @@
 # limitations under the License.
 
 /*
+------------------------
+* Resource: Grafana Admin and Password Secrets
+* Description: Secret for Grafana admin user/password
+* Variables:
+  - grafana_user_arn
+  - grafana_pwd_arn
+------------------------
+*/
+data "aws_secretsmanager_secret_version" "sm_user_version" {
+  secret_id = var.grafana_user_arn
+}
+
+data "aws_secretsmanager_secret_version" "sm_pwd_version" {
+  secret_id = var.grafana_pwd_arn
+}
+
+locals {
+  grafana_admin_user = sensitive(data.aws_secretsmanager_secret_version.sm_user_version.secret_string)
+  grafana_admin_pwd  = sensitive(data.aws_secretsmanager_secret_version.sm_pwd_version.secret_string)
+}
+
+
+/*
 -------------------------
 * Resource: Kubernetes Namespace
 * Description: Creates a Kubernetes namespace for monitoring resources.
@@ -61,7 +84,6 @@ resource "helm_release" "grafana" {
     name  = "readinessProbe.periodSeconds"
     value = "10"
   }
-
   set {
     name  = "livenessProbe.enabled"
     value = "true"
@@ -90,11 +112,11 @@ resource "helm_release" "grafana" {
 
   set {
     name  = "adminUser"
-    value = var.grafana_admin_user
+    value = local.grafana_admin_user
   }
   set {
     name  = "adminPassword"
-    value = var.grafana_admin_password
+    value = local.grafana_admin_pwd
   }
 
   set {
@@ -105,6 +127,7 @@ resource "helm_release" "grafana" {
     name  = "serviceAccount.name"
     value = "grafana"
   }
+
   set {
     name  = "env.AWS_REGION"
     value = var.region
@@ -123,21 +146,37 @@ resource "helm_release" "grafana" {
     value = "alb"
   }
   set {
-    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/target-type"
-    value = "ip"
-  }
-  set {
     name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/scheme"
     value = "internet-facing"
   }
   set {
-    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/listen-ports"
-    value = "[{\"HTTP\":80}]"
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/target-type"
+    value = "ip"
   }
+
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/certificate-arn"
+    value = var.enable_https ? var.self_signed_certificate_arn : ""
+  }
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/listen-ports"
+    value = var.enable_https ? "[{\"HTTPS\":443}]" : "[{\"HTTP\":80}]"
+  }
+
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/backend-protocol"
+    value = "HTTP"
+  }
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/healthcheck-protocol"
+    value = "HTTP"
+  }
+
   set {
     name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/healthcheck-path"
     value = "/api/health"
   }
+
   set {
     name  = "ingress.path"
     value = "/"

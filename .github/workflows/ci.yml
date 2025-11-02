@@ -235,7 +235,6 @@ jobs:
 
   tf-plan:
     name: Terraform Plan (PR only)
-    if: github.event_name == 'pull_request'
     needs: tf-validate
     runs-on: ubuntu-latest
     strategy:
