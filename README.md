@@ -382,7 +382,7 @@ Expanded docs live in `docs/`:
 
 ## License
 
-Apache License 2.0 — see LICENSE.
+Licensed under the Apache License, Version 2.0. See LICENSE for details.
 
 ---
 
