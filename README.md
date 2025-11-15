@@ -312,9 +312,10 @@ pip install -r requirements.txt
 export AWS_PROFILE=<PROFILE_NAME>
 ```
 
-5. Create env folder
+5. Create env folder & set ENV to directory (defaults to "dev")
 ```bash
-mkdir -p env/dev
+mkdir -p env/<DIRECTORY_NAME>
+export ENV=<DIRECTORY_NAME>
 ```
 
 6. Create `backend.hcl` locally (example above), do NOT commit it.
