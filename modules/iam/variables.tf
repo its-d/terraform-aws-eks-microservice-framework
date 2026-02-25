@@ -17,3 +17,9 @@ variable "common_tags" {
   description = "Common tags"
   default     = {}
 }
+
+variable "identifier" {
+  type        = string
+  description = "Prefix for IAM role names (multi-env isolation)"
+  default     = "main"
+}

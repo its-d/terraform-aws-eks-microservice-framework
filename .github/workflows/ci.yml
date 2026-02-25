@@ -94,10 +94,10 @@ jobs:
           ADDLICENSE_TAG="v1.1.1"              # valid
           ADDLICENSE_BIN="addlicense"
 
-          # (Optional) SHA256 pins – populate these after a first successful run
-          # TERRAFORM_DOCS_SHA256="<fill-me>"
-          # KUBECONFORM_SHA256="<fill-me>"
-          # ADDLICENSE_SHA256="<fill-me>"
+          # fix-security: SHA256 pins for integrity verification (kubeconform does not publish checksums)
+          TERRAFORM_DOCS_SHA256="8e436d0c44db49c2ccd95deede05c3deba324b34a274be06cd9ba9cdf644e795"
+          KUBECONFORM_SHA256=""  # not published by upstream
+          ADDLICENSE_SHA256="adad31f12ac4af835640dcc88284954706e38a3302eed07aa824926a12ab3498"
 
           sudo apt-get update -y
           sudo apt-get install -y jq unzip xz-utils
@@ -158,15 +158,15 @@ jobs:
             archive="$tmpdir/asset.archive"
             curl -fsSL -L -o "$archive" "$url"
 
-            echo "sha256 (unverified):"
+            echo "sha256:"
             sha256sum "$archive" || true
 
-            # Verify checksum if you’ve pinned it above
-            # case "$bin_name" in
-            #   terraform-docs) echo "${TERRAFORM_DOCS_SHA256}  $archive" | sha256sum -c - ;;
-            #   kubeconform)    echo "${KUBECONFORM_SHA256}  $archive"   | sha256sum -c - ;;
-            #   addlicense)     echo "${ADDLICENSE_SHA256}  $archive"    | sha256sum -c - ;;
-            # esac
+            # fix-security: Verify checksum when you’ve pinned it above
+            case "$bin_name" in
+              terraform-docs) [ -n "$TERRAFORM_DOCS_SHA256" ] && echo "${TERRAFORM_DOCS_SHA256}  $archive" | sha256sum -c - ;;
+              kubeconform)    [ -n "$KUBECONFORM_SHA256" ]    && echo "${KUBECONFORM_SHA256}  $archive"   | sha256sum -c - ;;
+              addlicense)     [ -n "$ADDLICENSE_SHA256" ]     && echo "${ADDLICENSE_SHA256}  $archive"    | sha256sum -c - ;;
+            esac
 
             # Try extraction; handle different archive formats
             if file "$archive" | grep -qi 'Zip archive data'; then
@@ -212,13 +212,9 @@ jobs:
         run: pre-commit run --all-files
 
   tf-validate:
-    name: Terraform Validate (dev/test/prod)
+    name: Terraform Validate
     needs: lint
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        env_dir: [dev] # Add other directories if you want additional validation
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
@@ -227,39 +223,43 @@ jobs:
       - name: terraform fmt (repo-wide)
         run: terraform fmt -check -recursive
       - name: terraform init (no backend)
-        working-directory: env/${{ matrix.env_dir }}
         run: terraform init -backend=false
       - name: terraform validate
-        working-directory: env/${{ matrix.env_dir }}
         run: terraform validate
+
+  tf-test:
+    name: Terraform Test (modules)
+    needs: tf-validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.5"
+      - name: Run module tests
+        run: make test
 
   tf-plan:
     name: Terraform Plan (PR only)
-    needs: tf-validate
+    needs: tf-test
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        env_dir: [dev] # Add other directories if you want additional validation
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.9.5"
       - name: terraform init (no backend)
-        working-directory: env/${{ matrix.env_dir }}
         run: terraform init -backend=false
       - name: terraform plan
-        working-directory: env/${{ matrix.env_dir }}
         run: |
           terraform plan \
             -input=false -refresh=false -lock=false \
+            -var-file=terraform.tfvars.example \
             -out=tfplan.bin || true
       - name: show plan
-        working-directory: env/${{ matrix.env_dir }}
         run: terraform show -no-color tfplan.bin > tfplan.txt || true
       - name: upload plan artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.env_dir }}-tfplan
-          path: env/${{ matrix.env_dir }}/tfplan.txt
+          name: tfplan
+          path: tfplan.txt

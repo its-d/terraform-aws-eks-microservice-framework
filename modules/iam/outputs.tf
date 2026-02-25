@@ -12,11 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# modules/iam/outputs.tf
-
-# IRSA role ARN for the AWS Load Balancer Controller
-# modules/iam/outputs.tf
-
 output "cluster_role_arn" {
   description = "IAM role ARN for the EKS control plane"
   value       = aws_iam_role.eks_cluster_role.arn

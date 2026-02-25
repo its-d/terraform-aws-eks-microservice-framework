@@ -56,6 +56,13 @@ resource "kubernetes_namespace" "monitoring" {
   - region
 -------------------------
 */
+locals {
+  grafana_values = templatefile("${path.module}/values/grafana-values.yaml", {
+    region           = var.region
+    grafana_irsa_arn = var.grafana_irsa_role_arn
+  })
+}
+
 resource "helm_release" "grafana" {
   name            = "grafana"
   namespace       = kubernetes_namespace.monitoring.metadata[0].name
@@ -66,6 +73,8 @@ resource "helm_release" "grafana" {
   timeout         = 900
   atomic          = true
   cleanup_on_fail = true
+
+  values = [local.grafana_values]
 
   set {
     name  = "persistence.enabled"
@@ -120,15 +129,6 @@ resource "helm_release" "grafana" {
   }
 
   set {
-    name  = "serviceAccount.create"
-    value = "true"
-  }
-  set {
-    name  = "serviceAccount.name"
-    value = "grafana"
-  }
-
-  set {
     name  = "env.AWS_REGION"
     value = var.region
   }
@@ -156,7 +156,7 @@ resource "helm_release" "grafana" {
 
   set {
     name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/certificate-arn"
-    value = var.enable_https ? var.self_signed_certificate_arn : ""
+    value = var.enable_https ? var.certificate_arn : ""
   }
   set {
     name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/listen-ports"

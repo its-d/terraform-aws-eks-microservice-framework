@@ -39,6 +39,7 @@ metadata:
 Security & best practices
 - Scope IAM policies to specific resource ARNs rather than using broad wildcards.
 - Keep role names and tags consistent to ease discovery and audits.
+- **Accepted risk:** `policies/aws_load_balancer_controller_iam_policy.json` uses `Resource: "*"` for all statements. This is required by the AWS Load Balancer Controller to manage ELB/EC2/ACM resources across the account. AWS does not support resource-level scoping for these actions. Consider scoping if AWS adds support in future.
 
 Troubleshooting
 - If pods cannot assume the role: check the OIDC provider, trust relationship, and that the service account annotation matches the expected role ARN.

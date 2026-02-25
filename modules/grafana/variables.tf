@@ -18,10 +18,15 @@ variable "region" {
 
 }
 
-variable "self_signed_certificate_arn" {
-  description = "ARN of the secret storing the TLS certificate for the ALB"
+variable "certificate_arn" {
   type        = string
+  description = "ACM certificate ARN for Grafana HTTPS. Empty when enable_https is false."
+  default     = ""
+}
 
+variable "grafana_irsa_role_arn" {
+  type        = string
+  description = "IRSA role ARN for Grafana to access CloudWatch."
 }
 
 variable "enable_https" {

@@ -44,8 +44,8 @@ variable "pod_execution_role_arn" {
 
 }
 
+# fix-security: No default; must be passed from root. Prevents accidental 0.0.0.0/0 exposure.
 variable "public_access_cidrs" {
   type        = list(string)
-  description = "Allowed CIDRs for public EKS API access (only used if public access is enabled)"
-  default     = ["0.0.0.0/0"]
+  description = "Allowed CIDRs for public EKS API access (only used if public access is enabled). Required."
 }

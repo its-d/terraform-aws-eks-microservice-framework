@@ -1,0 +1,3682 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.github/
+  workflows/
+    ci.yml
+docs/
+  .gitkeep
+  architecture.md
+  contributing.md
+  troubleshooting.md
+env/
+  dev/
+    .gitkeep
+  prod/
+    .gitkeep
+  test/
+    .gitkeep
+modules/
+  eks/
+    .gitkeep
+    main.tf
+    outputs.tf
+    provider.tf
+    README.md
+    variables.tf
+  grafana/
+    main.tf
+    outputs.tf
+    provider.tf
+    README.md
+    variables.tf
+  iam/
+    .gitkeep
+    main.tf
+    outputs.tf
+    provider.tf
+    README.md
+    variables.tf
+  iam_irsa/
+    policies/
+      aws_load_balancer_controller_iam_policy.json
+    .gitkeep
+    main.tf
+    outputs.tf
+    provider.tf
+    README.md
+    variables.tf
+  vpc/
+    .gitkeep
+    main.tf
+    outputs.tf
+    provider.tf
+    README.md
+    variables.tf
+.gitignore
+.license-header.txt
+.pre-commit-config.yaml
+alb_controller.tf
+backend.hcl.example
+CHANGELOG.md
+LICENSE
+main.tf
+Makefile
+NOTICE
+outputs.tf
+README.md
+requirements.txt
+terraform.tfvars.example
+variables.tf
+VERSION
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="docs/.gitkeep">
+
+</file>
+
+<file path="env/dev/.gitkeep">
+
+</file>
+
+<file path="env/prod/.gitkeep">
+
+</file>
+
+<file path="env/test/.gitkeep">
+
+</file>
+
+<file path="modules/eks/.gitkeep">
+
+</file>
+
+<file path="modules/iam/.gitkeep">
+
+</file>
+
+<file path="modules/iam_irsa/policies/aws_load_balancer_controller_iam_policy.json">
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "acm:DescribeCertificate",
+        "acm:ListCertificates",
+        "acm:GetCertificate"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:AuthorizeSecurityGroupIngress",
+        "ec2:DescribeAccountAttributes",
+        "ec2:DescribeAddresses",
+        "ec2:DescribeAvailabilityZones",
+        "ec2:DescribeInternetGateways",
+        "ec2:DescribeVpcs",
+        "ec2:DescribeVpcPeeringConnections",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeInstances",
+        "ec2:DescribeNetworkInterfaces",
+        "ec2:DescribeTags",
+        "ec2:GetCoipPoolUsage",
+        "ec2:DescribeCoipPools",
+        "ec2:DescribeVpcEndpoints",
+        "ec2:DescribeVpcEndpointServices",
+        "ec2:DescribeNetworkAcls",
+        "ec2:DescribeNetworkInterfaceAttribute",
+        "ec2:CreateSecurityGroup",
+        "ec2:CreateTags",
+        "ec2:DeleteTags",
+        "ec2:DeleteSecurityGroup",
+        "ec2:RevokeSecurityGroupIngress"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "elasticloadbalancing:AddListenerCertificates",
+        "elasticloadbalancing:AddTags",
+        "elasticloadbalancing:CreateListener",
+        "elasticloadbalancing:CreateLoadBalancer",
+        "elasticloadbalancing:CreateRule",
+        "elasticloadbalancing:CreateTargetGroup",
+        "elasticloadbalancing:DeleteListener",
+        "elasticloadbalancing:DeleteLoadBalancer",
+        "elasticloadbalancing:DeleteRule",
+        "elasticloadbalancing:DeleteTargetGroup",
+        "elasticloadbalancing:DeregisterTargets",
+        "elasticloadbalancing:DescribeListenerCertificates",
+        "elasticloadbalancing:DescribeListeners",
+        "elasticloadbalancing:DescribeListenerAttributes",
+        "elasticloadbalancing:DescribeLoadBalancers",
+        "elasticloadbalancing:DescribeLoadBalancerAttributes",
+        "elasticloadbalancing:DescribeRules",
+        "elasticloadbalancing:DescribeSSLPolicies",
+        "elasticloadbalancing:DescribeTags",
+        "elasticloadbalancing:DescribeTargetGroups",
+        "elasticloadbalancing:DescribeTargetGroupAttributes",
+        "elasticloadbalancing:DescribeTargetHealth",
+        "elasticloadbalancing:ModifyListener",
+        "elasticloadbalancing:ModifyLoadBalancerAttributes",
+        "elasticloadbalancing:ModifyRule",
+        "elasticloadbalancing:ModifyTargetGroup",
+        "elasticloadbalancing:ModifyTargetGroupAttributes",
+        "elasticloadbalancing:RegisterTargets",
+        "elasticloadbalancing:RemoveListenerCertificates",
+        "elasticloadbalancing:RemoveTags",
+        "elasticloadbalancing:SetIpAddressType",
+        "elasticloadbalancing:SetSecurityGroups",
+        "elasticloadbalancing:SetSubnets",
+        "elasticloadbalancing:SetWebAcl"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateServiceLinkedRole",
+        "iam:GetServerCertificate",
+        "iam:ListServerCertificates"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:DescribeUserPoolClient",
+        "waf-regional:GetWebACLForResource",
+        "waf-regional:GetWebACL",
+        "waf-regional:AssociateWebACL",
+        "waf-regional:DisassociateWebACL",
+        "wafv2:GetWebACL",
+        "wafv2:GetWebACLForResource",
+        "wafv2:AssociateWebACL",
+        "wafv2:DisassociateWebACL",
+        "shield:DescribeProtection",
+        "shield:GetSubscriptionState",
+        "shield:DeleteProtection",
+        "shield:CreateProtection",
+        "shield:DescribeSubscription",
+        "shield:ListProtections"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+</file>
+
+<file path="modules/iam_irsa/.gitkeep">
+
+</file>
+
+<file path="modules/vpc/.gitkeep">
+
+</file>
+
+<file path="modules/vpc/variables.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# I need an AWS Module for a VPC with public and private subnets, NAT Gateway, and Internet Gateway.
+
+variable "environment" {
+  type        = string
+  description = "The environment for the resources (e.g., dev, staging, prod)."
+}
+
+variable "identifier" {
+  type        = string
+  description = "A unique identifier for the resources."
+}
+
+variable "common_tags" {
+  type        = map(string)
+  description = "A map of common tags to apply to all resources."
+  default     = {}
+}
+</file>
+
+<file path=".license-header.txt">
+Copyright 2025 Darian Lee
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+</file>
+
+<file path="LICENSE">
+Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "[]"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright [yyyy] [name of copyright owner]
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+</file>
+
+<file path="NOTICE">
+Copyright 2025 Darian Lee
+
+This product includes software developed and contributed by Darian Lee.
+
+Licensed under the Apache License, Version 2.0 (the "License").
+You may not use this file except in compliance with the License.
+You may obtain a copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+</file>
+
+<file path="requirements.txt">
+cfgv==3.4.0
+distlib==0.4.0
+filelock==3.20.0
+identify==2.6.15
+nodeenv==1.9.1
+platformdirs==4.5.0
+pre_commit==4.3.0
+PyYAML==6.0.3
+virtualenv==20.35.3
+</file>
+
+<file path="modules/iam_irsa/variables.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+variable "common_tags" {
+  type        = map(string)
+  description = "Common tags"
+  default     = {}
+}
+
+variable "oidc_issuer_url" {
+  type        = string
+  description = "EKS cluster OIDC issuer URL (from module.eks.oidc_issuer_url)"
+}
+
+variable "oidc_provider_arn" {
+  type        = string
+  description = "EKS cluster OIDC provider ARN (from module.eks.oidc_provider_arn)"
+}
+</file>
+
+<file path="backend.hcl.example">
+bucket         = "bucket-name"
+key            = "/path/to/file.tfstate"
+region         = "region"
+dynamodb_table = "table-name"
+encrypt        = true
+</file>
+
+<file path="docs/contributing.md">
+# 🤝 Contributing Guide
+
+Thank you for contributing!
+
+---
+
+## Contribution Workflow
+
+1. Fork the repository and create a feature branch:
+```bash
+git checkout -b feature/my-change
+```
+
+2. Implement changes; run formatting and tests locally:
+```bash
+make fmt
+pre-commit run --all-files
+terraform validate
+```
+
+3. Run a plan for an isolated environment:
+```bash
+cp terraform.tfvars.example env/dev/terraform.tfvars
+# edit env/dev/terraform.tfvars
+make plan ENV=dev
+```
+
+4. Push your branch and open a PR describing the change, motivation, and verification steps.
+
+---
+
+## Local Development & Testing
+
+- Formatting:
+```bash
+make fmt
+```
+
+- Validation:
+```bash
+make validate
+tflint  # if installed
+```
+
+- Generating docs for modules:
+```bash
+make docs
+```
+
+- Pre-commit:
+```bash
+pre-commit install
+pre-commit run --all-files
+```
+
+---
+
+## Module Guidelines
+
+- Each module should be self-contained:
+  - main.tf
+  - variables.tf
+  - outputs.tf
+  - README.md (module level)
+  - examples/ (optional but recommended)
+- Keep modules small and focused.
+- Use variables for all environment-specific values — avoid hard-coded ARNs or regions.
+
+---
+
+## PR Requirements
+
+- All changes must pass pre-commit checks.
+- Add/Update module README when adding or significantly changing a module.
+- Document breaking changes in CHANGELOG.md.
+- Tag reviewers and add a clear description of the impact.
+
+---
+
+## Secrets & Sensitive Values
+
+- Never commit secrets or credentials.
+- Use env/<env>/terraform.tfvars only locally; add env/* to .gitignore if necessary.
+- Use SSM Parameter Store / Secrets Manager for production secrets if desired.
+
+---
+</file>
+
+<file path="modules/eks/README.md">
+# EKS module — README
+
+Purpose
+- Provision the Amazon EKS control plane and Fargate profiles required to run Kubernetes workloads with minimal operational overhead.
+- Expose cluster metadata required by downstream modules (cluster name, cluster security group ID, OIDC issuer URL for IRSA).
+
+What this module provides
+- aws_eks_cluster resource
+- aws_eks_fargate_profile resource(s) for selected namespaces
+- A small create-time helper that attempts to update local kubeconfig and patch CoreDNS for Fargate scheduling (runs only on initial create)
+- Outputs: cluster_name, cluster_security_group_id, oidc_issuer_url, and other cluster metadata
+
+Important: kubeconfig & post-create behavior (safe-by-default)
+- On initial resource creation, the module runs a local create-time provisioner that:
+  - Attempts to add the new cluster to the local kubeconfig using `aws eks update-kubeconfig` (only if the cluster is not already present in kubeconfig).
+  - Attempts to patch the CoreDNS deployment (in kube-system) so it can schedule on Fargate (adds nodeSelector/tolerations) and waits for rollout (with a timeout). Non-fatal issues are logged as warnings.
+- The create-time provisioner runs exactly once (when Terraform creates the cluster resource). It will not run for normal subsequent `terraform apply` calls.
+
+Quick usage (root wiring)
+```hcl
+module "eks" {
+  source                = "./modules/eks"
+  identifier            = var.identifier
+  private_subnet_ids    = module.vpc.private_subnet_ids
+  cluster_role_arn      = module.iam.eks_cluster_role_arn
+  pod_execution_role_arn = module.iam.pod_execution_role_arn
+  common_tags           = local.common_tags
+}
+```
+
+Key inputs (high level)
+- identifier — string; prefix for resource names.
+- private_subnet_ids — list(string); subnets for control plane ENIs and Fargate.
+- cluster_role_arn — string; IAM role ARN for the EKS control plane.
+- pod_execution_role_arn — string; pod execution role used by Fargate pods (IRSA).
+- public_access_cidrs — list(string); allowed CIDRs if public access enabled.
+
+Key outputs
+- cluster_name — the EKS cluster name (useful for aws eks update-kubeconfig).
+- cluster_security_group_id — security group ID used by the cluster (useful for SG rules).
+- oidc_issuer_url — OIDC issuer URL for configuring IRSA.
+
+Requirements & providers
+- Terraform >= 1.5.0
+- AWS provider ~> 5.95
+- null provider ~> 3.2 (used for optional local steps)
+
+Troubleshooting
+- If kubeconfig update fails: ensure `aws` CLI is installed and credentials are available.
+- If CoreDNS rollout does not complete: inspect pod logs in kube-system and the EKS control plane events.
+</file>
+
+<file path="modules/grafana/outputs.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+</file>
+
+<file path="modules/grafana/provider.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.95"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.13"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.29"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
+    }
+  }
+}
+</file>
+
+<file path="modules/iam/README.md">
+# IAM core module — README
+
+Purpose
+- Create IAM roles, policies, and service principals required to operate the EKS cluster and platform components (cluster control plane role, pod-execution role, CI role recommendations).
+- Provide least-privilege IAM artifacts consumed by other modules.
+
+What this module provides (typical)
+- IAM role(s) for the EKS control plane (if created here)
+- Pod execution role ARN used by Fargate / IRSA flows
+- Optional managed/inline policies required by platform components
+- Outputs referencing role ARNs used by EKS module and other modules
+
+Quick usage (root wiring)
+```hcl
+module "iam" {
+  source      = "./modules/iam"
+  identifier  = var.identifier
+  common_tags = local.common_tags
+}
+```
+
+Key inputs
+- identifier — string; prefix for role names.
+- common_tags — map(string); tags applied to IAM resources.
+
+Key outputs (examples)
+- eks_cluster_role_arn — ARN of the EKS control plane role (if created here).
+- pod_execution_role_arn — ARN for pod-execution (IRSA) role.
+
+Security & best practices
+- Scope policies to least privilege; avoid `*` where possible.
+- For CI/automation, create a narrowly scoped role with S3/DynamoDB state privileges plus limited EKS actions. Provide an example policy in docs (recommended).
+
+Troubleshooting
+- AccessDenied errors: check the policy attachments and trust relationships for roles being assumed by EKS or CI agents.
+</file>
+
+<file path="modules/iam_irsa/outputs.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+output "alb_irsa_role_arn" {
+  description = "IRSA role ARN for the AWS Load Balancer Controller"
+  value       = aws_iam_role.alb_irsa.arn
+}
+</file>
+
+<file path="modules/iam_irsa/provider.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = { source = "hashicorp/aws", version = "~> 5.95" }
+    tls = { source = "hashicorp/tls", version = "~> 4.0" }
+  }
+}
+</file>
+
+<file path="modules/iam_irsa/README.md">
+# IAM IRSA module — README
+
+Purpose
+- Configure IAM Roles for Service Accounts (IRSA) so Kubernetes workloads (controllers like the AWS Load Balancer Controller) can assume least-privilege AWS permissions without embedded keys.
+
+What this module provides
+- IAM role(s) with trust policies bound to the EKS OIDC provider
+- Optional inline/managed policies scoped to the controller's needs (e.g., ELB actions, SSM access)
+- Guidance for annotating Kubernetes service accounts to use the created roles
+
+Quick usage (root wiring)
+```hcl
+module "iam_irsa" {
+  source        = "./modules/iam_irsa"
+  oidc_issuer_url = module.eks.oidc_issuer_url
+  common_tags   = local.common_tags
+}
+```
+
+Key inputs
+- oidc_issuer_url — string; the EKS cluster OIDC issuer URL from module.eks.
+- common_tags — map(string).
+
+Key outputs
+- role ARNs for created IRSA roles (e.g., aws_load_balancer_controller_role_arn).
+
+How to use with Kubernetes
+- Annotate the controller's service account:
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aws-load-balancer-controller
+  namespace: kube-system
+  annotations:
+    eks.amazonaws.com/role-arn: "<role-arn-from-terraform>"
+```
+
+Security & best practices
+- Scope IAM policies to specific resource ARNs rather than using broad wildcards.
+- Keep role names and tags consistent to ease discovery and audits.
+
+Troubleshooting
+- If pods cannot assume the role: check the OIDC provider, trust relationship, and that the service account annotation matches the expected role ARN.
+</file>
+
+<file path="modules/vpc/main.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+/*
+-------------------------
+* Module: VPC
+* Description: Creates a VPC with public and private subnets across two AZs.
+* Variables required:
+  - identifier
+  - environment
+  - common_tags
+-------------------------
+*/
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "~> 5.8"
+
+  name = "${var.identifier}-${var.environment}-vpc"
+  cidr = "10.0.0.0/16"
+
+  # Two AZs in us-east-1
+  azs = ["us-east-1a", "us-east-1b"]
+
+  # 2 public + 2 private subnets (any /24s are fine)
+  public_subnets  = ["10.0.0.0/24", "10.0.1.0/24"]
+  private_subnets = ["10.0.100.0/24", "10.0.101.0/24"]
+
+  # Basics you almost always want
+  enable_dns_support      = true
+  enable_dns_hostnames    = true
+  map_public_ip_on_launch = true
+
+  # NAT for private subnets (cost-friendly single NAT)
+  enable_nat_gateway = true
+  single_nat_gateway = true
+
+  # Helpful tags on subnets
+  public_subnet_tags = {
+    "kubernetes.io/role/elb"                              = "1"
+    "kubernetes.io/cluster/${var.identifier}-eks-cluster" = "shared"
+  }
+  private_subnet_tags = {
+    "kubernetes.io/role/internal-elb"                     = "1"
+    "kubernetes.io/cluster/${var.identifier}-eks-cluster" = "shared"
+  }
+
+
+  tags = var.common_tags
+}
+</file>
+
+<file path="modules/vpc/README.md">
+# VPC module — README
+
+Purpose
+- Create a well-structured, multi-AZ VPC that is the single source of truth for networking in this framework.
+- Provide the networking outputs consumed by other modules (EKS, Security).
+
+What this module provides
+- VPC with configurable CIDR.
+- Public and private subnets across AZs (default configured in module call).
+- Internet Gateway and NAT Gateway configuration.
+- Route tables and associations.
+- Outputs commonly used by other modules (vpc_id, private_subnet_ids, public_subnet_ids, availability_zones).
+
+Why use this module
+- Keeps networking concerns isolated and reusable across environments.
+- Ensures consistent subnet layout and tagging for downstream modules.
+
+Quick usage (root wiring)
+```hcl
+module "vpc" {
+  source      = "./modules/vpc"
+  environment = var.environment
+  identifier  = var.identifier
+  common_tags = local.common_tags
+}
+```
+
+Key inputs (high level)
+- identifier — string; prefix for resource names.
+- environment — string; environment name (dev/test/prod).
+- cidr — string; VPC CIDR block (overridable).
+- azs — list(string); which AZs to use (module defaults to a reasonable list).
+- common_tags — map(string); tags applied to resources.
+
+Key outputs (examples)
+- vpc_id — the created VPC ID.
+- private_subnet_ids — list of private subnet IDs (used by EKS).
+- public_subnet_ids — list of public subnet IDs.
+- availability_zones — list of AZs used.
+
+Operational notes & recommendations
+- Defaults are tuned for a two-AZ deployment for cost/complexity balance. Choose additional AZs in production as needed.
+- If you intend to reuse an existing VPC, prefer wiring in `private_subnet_ids` and other values into downstream modules rather than changing this module.
+- Monitor NAT gateway count and costs in non-production environments.
+
+Troubleshooting
+- If resources fail to create: validate AZ names and available IPs in the chosen CIDR blocks.
+- If EKS mount targets fail: ensure subnets have sufficient IP space.
+</file>
+
+<file path="modules/iam/outputs.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# modules/iam/outputs.tf
+
+# IRSA role ARN for the AWS Load Balancer Controller
+# modules/iam/outputs.tf
+
+output "cluster_role_arn" {
+  description = "IAM role ARN for the EKS control plane"
+  value       = aws_iam_role.eks_cluster_role.arn
+}
+
+output "pod_execution_role_arn" {
+  description = "Fargate pod execution role ARN"
+  value       = aws_iam_role.eks_pod_execution_role.arn
+}
+</file>
+
+<file path="modules/iam_irsa/main.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+/*
+----------------------------
+* Locals: ALB Controller IRSA
+* Description: Local values for the ALB Controller IAM Role for Service Accounts (IRSA).
+* Variables:
+  - oidc_issuer_url
+  - oidc_provider_arn
+  - common_tags
+----------------------------
+*/
+
+locals {
+  issuer_host  = replace(var.oidc_issuer_url, "https://", "")
+  sa_namespace = "kube-system"
+  sa_name      = "aws-load-balancer-controller"
+  sa_subject   = "system:serviceaccount:${local.sa_namespace}:${local.sa_name}"
+}
+
+/*
+----------------------------
+* Resources: ALB Controller IRSA
+* Description: IAM Role and Policy for the AWS Load Balancer Controller using IRSA.
+* Variables:
+  - oidc_provider_arn
+  - common_tags
+----------------------------
+*/
+resource "aws_iam_role" "alb_irsa" {
+  name = "alb-controller-irsa"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Principal = { Federated = var.oidc_provider_arn }
+      Condition = {
+        StringEquals = {
+          "${local.issuer_host}:aud" = "sts.amazonaws.com"
+          "${local.issuer_host}:sub" = local.sa_subject
+        }
+      }
+    }]
+  })
+  tags = var.common_tags
+}
+
+
+/*
+----------------------------
+* Resource: ALB Controller IAM Policy and Attachment
+* Description: IAM Policy and Attachment for the AWS Load Balancer Controller.
+* Variables: None
+----------------------------
+*/
+resource "aws_iam_policy" "alb_controller" {
+  name   = "AWSLoadBalancerControllerIAMPolicy"
+  policy = file("${path.module}/policies/aws_load_balancer_controller_iam_policy.json")
+}
+
+/*
+----------------------------
+* Resource: ALB Controller IAM Role Policy Attachment
+* Description: Attaches the IAM Policy to the ALB Controller IRSA Role.
+* Variables: None
+----------------------------
+*/
+resource "aws_iam_role_policy_attachment" "alb_attach" {
+  role       = aws_iam_role.alb_irsa.name
+  policy_arn = aws_iam_policy.alb_controller.arn
+}
+</file>
+
+<file path="modules/vpc/outputs.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+output "vpc_id" {
+  description = "The ID of the VPC"
+  value       = module.vpc.vpc_id
+}
+
+output "public_subnet_ids" {
+  description = "List of public subnet IDs"
+  value       = module.vpc.public_subnets
+}
+
+output "private_subnet_ids" {
+  description = "List of private subnet IDs"
+  value       = module.vpc.private_subnets
+}
+</file>
+
+<file path=".pre-commit-config.yaml">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+
+repos:
+  # --- General File Hygiene ---
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+      - id: check-merge-conflict
+
+  # --- Terraform ---
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.103.0
+    hooks:
+      - id: terraform_fmt
+      - id: terraform_validate
+      - id: terraform_tflint
+      - id: terraform_docs
+        args: ["--args=--sort-by", "required"]
+
+  # --- Python (Formatting & Linting) ---
+  # Use the mirror that provides pre-commit hooks
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 25.9.0
+    hooks:
+      - id: black
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.3.0
+    hooks:
+      - id: flake8
+        additional_dependencies:
+          - flake8-bugbear
+          - flake8-comprehensions
+          - flake8-docstrings
+        args: ["--max-line-length=100", "--ignore=E203,W503"]
+
+  # --- YAML linting ---
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.37.1
+    hooks:
+      - id: yamllint
+        args: ["-d", "{extends: default, rules: {line-length: disable}}"]
+
+  # --- Local hooks (kubeconform + license enforcement) ---
+  - repo: local
+    hooks:
+      # kubeconform installed on your system (brew install kubeconform)
+      - id: kubeconform
+        name: kubeconform (K8s)
+        entry: kubeconform
+        language: system
+        files: ^k8s/.*\.(ya?ml)$
+        args:
+          - -strict
+          - -summary
+          - -ignore-missing-schemas
+          - -kubernetes-version
+          - "1.30.0"
+
+      - id: add-apache-headers
+        name: Add/Update Apache-2.0 headers
+        entry: addlicense -f .license-header.txt
+        language: system
+        pass_filenames: true
+        types_or: [python, yaml, shell, terraform]
+        files: |
+          (?x)
+          ^.*\.(tf|tfvars|yaml|yml|py|sh)$
+        exclude: |
+          (?x)
+          ^(LICENSE|NOTICE|VERSION)$|
+          ^\.git/|
+          ^docs/|
+          ^env/.*/\.gitkeep$|
+          ^modules/.*/\.gitkeep$|
+          ^\.venv/|
+          __pycache__
+</file>
+
+<file path="modules/eks/outputs.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+output "cluster_name" {
+  value       = module.eks.cluster_name
+  description = "value of the EKS cluster name"
+}
+
+output "oidc_issuer_url" {
+  value       = module.eks.cluster_oidc_issuer_url
+  description = "OIDC issuer URL for the EKS cluster"
+}
+
+output "cluster_security_group_id" {
+  description = "The EKS Cluster Security Group ID used by Fargate pod ENIs"
+  value       = module.eks.node_security_group_id
+}
+
+output "cluster_endpoint" {
+  description = "EKS cluster endpoint"
+  value       = module.eks.cluster_endpoint
+}
+
+output "cluster_certificate_authority_data" {
+  description = "Base64-encoded certificate data required to access the cluster"
+  value       = module.eks.cluster_certificate_authority_data
+}
+
+output "oidc_provider_arn" {
+  description = "OIDC provider ARN for IRSA integration"
+  value       = module.eks.oidc_provider_arn
+}
+
+output "fargate_profile_arn" {
+  description = "ARN of the created Fargate profile"
+  value       = try(module.eks.fargate_profile_arn, null)
+}
+</file>
+
+<file path="modules/grafana/README.md">
+# Grafana module — README
+
+Purpose
+- Deploy Grafana into the Kubernetes cluster (namespace `monitoring`) for dashboards and plugins.
+
+What this module provides
+- Kubernetes Namespace `monitoring`
+- Helm release installation for Grafana
+- Optional helper null_resource for small platform-specific fixes
+
+Quick usage (root wiring)
+```hcl
+module "grafana" {
+  source                 = "./modules/grafana"
+  identifier             = var.identifier
+  grafana_admin_user     = var.grafana_admin_user
+  grafana_admin_password = var.grafana_admin_password  # recommended: pull from Secrets Manager/SSM
+}
+```
+
+Inputs & secrets
+- grafana_admin_user — string; admin username (recommend storing in Secrets Manager / SSM rather than tfvars).
+- grafana_admin_password — sensitive; recommend reading from AWS Secrets Manager or SSM Parameter Store with Terraform data sources.
+- identifier — string; naming prefix.
+
+Secrets recommendation (already adopted)
+- Retrieve admin credentials from AWS Secrets Manager or SSM, e.g.:
+```hcl
+data "aws_ssm_parameter" "grafana_admin_password" {
+  name           = "/project/${var.environment}/grafana_admin_password"
+  with_decryption = true
+}
+```
+- Do not hardcode sensitive values into env tfvars; prefer CI secret injection or Secrets Manager.
+
+Troubleshooting
+- Check Grafana pod logs: `kubectl -n monitoring logs -l app.kubernetes.io/name=grafana`
+</file>
+
+<file path="modules/grafana/variables.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+variable "region" {
+  type        = string
+  description = "The AWS region where the resources are deployed."
+
+}
+
+variable "self_signed_certificate_arn" {
+  description = "ARN of the secret storing the TLS certificate for the ALB"
+  type        = string
+
+}
+
+variable "enable_https" {
+  type    = bool
+  default = false
+}
+
+variable "grafana_user_arn" {
+  description = "ARN of the secret storing the Grafana admin username"
+  type        = string
+}
+
+variable "grafana_pwd_arn" {
+  description = "ARN of the secret storing the Grafana admin password"
+  type        = string
+}
+</file>
+
+<file path="modules/iam/variables.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+variable "common_tags" {
+  type        = map(string)
+  description = "Common tags"
+  default     = {}
+}
+</file>
+
+<file path="modules/vpc/provider.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = { source = "hashicorp/aws", version = "~> 5.95" }
+  }
+}
+</file>
+
+<file path=".gitignore">
+# --- TERRAFORM ---
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.tfvars
+*.tfvars.json
+terraform.tfplan
+.terraformrc
+terraform.rc
+*.tfplan
+.make_env_public_access
+.last_vpc_id
+
+# --- PYTHON (if using helper scripts) ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.eggs/
+dist/
+build/
+.env
+venv/
+.venv/
+
+# --- LOGS & TEMP ---
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+
+# --- CI / LOCAL ENVIRONMENT ---
+.envrc
+.local/
+*.hcl
+*.lock.hcl
+.idea/
+.vscode/
+*.code-workspace
+
+# --- DOCUMENTATION / OUTPUT ---
+*.zip
+*.tar.gz
+*.out
+
+# --- SENSITIVE CONFIGS ---
+secrets.*
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.jks
+
+# --- OS-SPECIFIC ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*DS_Store*
+
+# --- OTHER ---
+*.pem
+</file>
+
+<file path=".github/workflows/ci.yml">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+name: CI
+
+on:
+  push:
+    paths:
+      - "**/*.tf"
+      - "**/*.tfvars"
+      - ".pre-commit-config.yaml"
+      - "scripts/**"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/ci.yaml"
+  pull_request:
+    paths:
+      - "**/*.tf"
+      - "**/*.tfvars"
+      - ".pre-commit-config.yaml"
+      - "scripts/**"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/ci.yaml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint & Code Scan (pre-commit)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.5"
+
+      - name: Set up TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: "v0.53.0"
+
+      - name: Cache pre-commit
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
+
+      - name: Install CLI tools (terraform-docs, kubeconform, addlicense)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          set -x
+
+          BIN_DIR="$GITHUB_WORKSPACE/.bin"
+          mkdir -p "$BIN_DIR"
+          echo "$BIN_DIR" >> "$GITHUB_PATH"
+
+          # --- Versions (pin here) ---
+          TERRAFORM_DOCS_REPO="terraform-docs/terraform-docs"
+          TERRAFORM_DOCS_TAG="v0.17.0"         # valid
+          TERRAFORM_DOCS_BIN="terraform-docs"
+
+          KUBECONFORM_REPO="yannh/kubeconform"
+          KUBECONFORM_TAG="v0.6.7"             # valid
+          KUBECONFORM_BIN="kubeconform"
+
+          ADDLICENSE_REPO="google/addlicense"
+          ADDLICENSE_TAG="v1.1.1"              # valid
+          ADDLICENSE_BIN="addlicense"
+
+          # (Optional) SHA256 pins – populate these after a first successful run
+          # TERRAFORM_DOCS_SHA256="<fill-me>"
+          # KUBECONFORM_SHA256="<fill-me>"
+          # ADDLICENSE_SHA256="<fill-me>"
+
+          sudo apt-get update -y
+          sudo apt-get install -y jq unzip xz-utils
+
+          get_release_json() {
+            local repo="$1" tag="$2"
+            if [ -n "${GITHUB_TOKEN:-}" ]; then
+              curl -fsSL -H "Authorization: token $GITHUB_TOKEN" \
+                "https://api.github.com/repos/${repo}/releases/tags/${tag}" || return 1
+            else
+              curl -fsSL "https://api.github.com/repos/${repo}/releases/tags/${tag}" || return 1
+            fi
+          }
+
+          get_latest_release_json() {
+            local repo="$1"
+            if [ -n "${GITHUB_TOKEN:-}" ]; then
+              curl -fsSL -H "Authorization: token $GITHUB_TOKEN" \
+                "https://api.github.com/repos/${repo}/releases/latest"
+            else
+              curl -fsSL "https://api.github.com/repos/${repo}/releases/latest"
+            fi
+          }
+
+          pick_asset_url() {
+            # stdin: release JSON
+            # stdout: first linux/amd64 asset url
+            jq -r '
+              .assets[]
+              | select(
+                  (.name | test("linux"; "i"))
+                  and
+                  (.name | test("amd64|x86_64"; "i"))
+                )
+              | .browser_download_url
+            ' | head -n1
+          }
+
+          install_from_release() {
+            local repo="$1" tag="$2" bin_name="$3"
+            echo "Looking up ${repo} ${tag}…"
+            release_json="$(get_release_json "$repo" "$tag" || true)"
+
+            if [ -z "${release_json}" ] || [ "${release_json}" = "null" ]; then
+              echo "Tag ${tag} not found for ${repo}; falling back to latest"
+              release_json="$(get_latest_release_json "$repo")"
+            fi
+
+            url="$(echo "$release_json" | pick_asset_url)"
+            if [ -z "$url" ] || [ "$url" = "null" ]; then
+              echo "ERROR: no linux/amd64 asset found for ${repo}"
+              echo "$release_json" | jq -r '.assets[].name' || true
+              return 1
+            fi
+
+            echo "Downloading ${bin_name} from: $url"
+            tmpdir="$(mktemp -d)"
+            archive="$tmpdir/asset.archive"
+            curl -fsSL -L -o "$archive" "$url"
+
+            echo "sha256 (unverified):"
+            sha256sum "$archive" || true
+
+            # Verify checksum if you’ve pinned it above
+            # case "$bin_name" in
+            #   terraform-docs) echo "${TERRAFORM_DOCS_SHA256}  $archive" | sha256sum -c - ;;
+            #   kubeconform)    echo "${KUBECONFORM_SHA256}  $archive"   | sha256sum -c - ;;
+            #   addlicense)     echo "${ADDLICENSE_SHA256}  $archive"    | sha256sum -c - ;;
+            # esac
+
+            # Try extraction; handle different archive formats
+            if file "$archive" | grep -qi 'Zip archive data'; then
+              unzip -q "$archive" -d "$tmpdir"
+            else
+              # try both common tar variants
+              tar -xf "$archive" -C "$tmpdir" || {
+                echo "ERROR: could not extract $archive"
+                return 1
+              }
+            fi
+
+            # Find the binary
+            binpath="$(find "$tmpdir" -type f -perm /111 -name "$bin_name" -print -quit)"
+            if [ -z "$binpath" ]; then
+              # sometimes the binary is named with suffixes; pick first executable
+              binpath="$(find "$tmpdir" -type f -perm /111 -print -quit)"
+            fi
+            if [ -z "$binpath" ]; then
+              echo "ERROR: executable not found for ${bin_name}"
+              ls -la "$tmpdir"
+              return 1
+            fi
+
+            mv "$binpath" "${BIN_DIR}/${bin_name}"
+            chmod +x "${BIN_DIR}/${bin_name}"
+            echo "Installed ${bin_name} -> ${BIN_DIR}/${bin_name}"
+            rm -rf "$tmpdir"
+          }
+
+          install_from_release "$TERRAFORM_DOCS_REPO" "$TERRAFORM_DOCS_TAG" "$TERRAFORM_DOCS_BIN"
+          install_from_release "$KUBECONFORM_REPO"    "$KUBECONFORM_TAG"    "$KUBECONFORM_BIN"
+          install_from_release "$ADDLICENSE_REPO"     "$ADDLICENSE_TAG"     "$ADDLICENSE_BIN"
+
+      - name: Install pre-commit
+        run: |
+          python -m pip install --upgrade pip
+          pip install pre-commit
+
+      - name: Run pre-commit hooks
+        env:
+          PCT_TFPATH: terraform
+        run: pre-commit run --all-files
+
+  tf-validate:
+    name: Terraform Validate (dev/test/prod)
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env_dir: [dev] # Add other directories if you want additional validation
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.5"
+      - name: terraform fmt (repo-wide)
+        run: terraform fmt -check -recursive
+      - name: terraform init (no backend)
+        working-directory: env/${{ matrix.env_dir }}
+        run: terraform init -backend=false
+      - name: terraform validate
+        working-directory: env/${{ matrix.env_dir }}
+        run: terraform validate
+
+  tf-plan:
+    name: Terraform Plan (PR only)
+    needs: tf-validate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env_dir: [dev] # Add other directories if you want additional validation
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.5"
+      - name: terraform init (no backend)
+        working-directory: env/${{ matrix.env_dir }}
+        run: terraform init -backend=false
+      - name: terraform plan
+        working-directory: env/${{ matrix.env_dir }}
+        run: |
+          terraform plan \
+            -input=false -refresh=false -lock=false \
+            -out=tfplan.bin || true
+      - name: show plan
+        working-directory: env/${{ matrix.env_dir }}
+        run: terraform show -no-color tfplan.bin > tfplan.txt || true
+      - name: upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.env_dir }}-tfplan
+          path: env/${{ matrix.env_dir }}/tfplan.txt
+</file>
+
+<file path="docs/troubleshooting.md">
+# 🩺 Troubleshooting
+
+Common issues with steps to diagnose and resolve.
+
+---
+
+## Load Balancer Not Creating or Service Stuck in Pending
+
+Symptoms
+- Service remains in `Pending`.
+- No NLB/ALB visible in AWS console.
+
+Checks & Fixes
+- Check controller logs:
+```bash
+kubectl -n kube-system logs -l app.kubernetes.io/name=aws-load-balancer-controller
+```
+- Ensure the IRSA role policy includes ELB permissions (see modules/iam_irsa/policies).
+- Confirm Service annotations such as:
+  - `service.beta.kubernetes.io/aws-load-balancer-type: "nlb"`
+  - correct port/targetPort values.
+- Re-apply Terraform/Helm for controller if IAM policy was updated.
+
+---
+
+## AccessDenied on ELB APIs
+
+Example:
+```
+AccessDenied: User is not authorized to perform: elasticloadbalancing:DescribeListenerAttributes
+```
+
+Fixes:
+- Ensure the IAM role used by the controller has the correct managed/custom policy.
+- If using IRSA, verify service account annotation matches the IAM role ARN and the trust policy.
+
+---
+
+## Pods Pending — No Nodes Available (Fargate profiles)
+
+Cause:
+- Namespace is not included in a Fargate profile; pods have no scheduling target.
+
+Fix:
+- Add namespace to Fargate profile in the EKS module, then terraform apply.
+- Alternatively run workloads in a namespace covered by an existing Fargate profile.
+
+---
+
+## Grafana Related Issues
+
+Symptoms
+- Grafana Pod cannot start or crashes with mount errors.
+- Grafana deployment starts but dashboards are not persisted after restart.
+
+1. Grafana Data Persistence
+   - If Grafana starts but dashboards disappear after pod restart, confirm the mount is writable and Grafana is writing to the mounted path (`/var/lib/grafana` or chart-specific path).
+
+---
+
+## Clean Destroy / Resource-in-use Errors (ENIs, Target Groups)
+
+Cause:
+- K8s controllers or pods left AWS resources attached (ENIs, target groups). Terraform cannot delete VPCs/subnets/security groups with attached resources.
+
+Recommended Steps:
+1. Delete Kubernetes resources:
+```bash
+kubectl delete -f k8s/service-hello-world.yaml
+kubectl delete -f k8s/deployment-hello-world.yaml
+# If Grafana is installed:
+kubectl -n monitoring delete deploy grafana
+helm -n monitoring uninstall grafana  # if installed via helm
+```
+1. Wait for pods and ENIs to be removed. Verify:
+
+- Kubernetes:
+```bash
+kubectl get pods -A
+```
+
+- AWS:
+  - EC2 Console -> Network Interfaces (Search for cluster name tags)
+  - ELB Console -> Target Groups -> Targets (ensure none remain healthy/attached)
+
+1. If Terraform still errors, use:
+```bash
+terraform state list   # find stuck resource addresses
+terraform state rm <address>  # remove resource from state (dangerous; last resort)
+terraform destroy -auto-approve
+```
+Note: Use state rm only if you accept that Terraform will no longer track that resource.
+
+---
+
+## State Lock / DynamoDB Lock Issues
+
+Symptoms:
+- terraform init or apply fails due to a stale lock.
+
+Fix:
+- Use DynamoDB console to inspect lock record (table used for locking). Remove lock if you're certain no concurrent process is using it.
+- Configure proper IAM permissions for the user/role that runs Terraform (DynamoDB: PutItem/DeleteItem).
+
+---
+
+## kubeconfig / auth issues
+
+Symptoms:
+- aws eks update-kubeconfig fails, or kubectl commands return Unauthorized.
+
+Fix:
+- Ensure AWS CLI credentials used are allowed to call eks:DescribeCluster and sts:GetCallerIdentity.
+- Confirm region and cluster name are correct.
+- If using assumed roles, include --role-arn with update-kubeconfig or ensure your AWS profile is configured to assume the role.
+
+---
+
+## ALB Controller / Helm failures
+
+Fixes:
+- Verify Helm chart version and values; consult Helm release history:
+```bash
+helm -n kube-system list
+helm -n kube-system status <release>
+kubectl -n kube-system describe pod <pod>
+kubectl -n kube-system logs <pod>
+```
+- Ensure chart resources are created in the correct namespace and RBAC is applied.
+
+---
+
+## Debugging Tips & Useful Commands
+
+- View all pods:
+```bash
+kubectl get pods -A
+```
+
+- View events:
+```bash
+kubectl get events --sort-by=.lastTimestamp
+```
+
+- Describe service:
+```bash
+kubectl describe svc <service> -n <namespace>
+```
+
+- Check ENIs in AWS:
+  - EC2 Console -> Network Interfaces, filter by description/tag
+
+- Terraform debugging:
+```bash
+TF_LOG=DEBUG terraform apply
+```
+
+---
+
+If you encounter an issue not covered here, collect the following and open an issue (or attach to your PR):
+- terraform plan output
+- terraform state list (if relevant)
+- kubectl get pods -A and kubectl describe for problem resources
+- logs from relevant pods (controller/application)
+- relevant AWS console screenshots or IDs
+</file>
+
+<file path="VERSION">
+v1.0.0
+</file>
+
+<file path="modules/iam/provider.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = { source = "hashicorp/aws", version = "~> 5.95" }
+  }
+}
+</file>
+
+<file path="alb_controller.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+/*
+-------------------------
+Helm release: AWS Load Balancer Controller
+- Runs in kube-system on Fargate (your Fargate profile has the selector)
+- Uses the ServiceAccount above (so set serviceAccount.create=false)
+- Variables:
+  - region
+-------------------------
+*/
+resource "helm_release" "aws_load_balancer_controller" {
+  name       = "aws-load-balancer-controller"
+  namespace  = "kube-system"
+  repository = "https://aws.github.io/eks-charts"
+  chart      = "aws-load-balancer-controller"
+
+  atomic          = true # succeed-or-rollback in one shot
+  wait            = true # wait for all resources to become ready
+  cleanup_on_fail = true # delete created resources if install/upgrade fails
+  timeout         = 900  # seconds; be generous on first install
+  max_history     = 2    # keep history small to avoid clutter
+
+  # Required settings
+  set {
+    name  = "clusterName"
+    value = module.eks.cluster_name
+  }
+  set {
+    name  = "region"
+    value = var.region
+  }
+  set {
+    name  = "vpcId"
+    value = module.vpc.vpc_id
+  }
+
+  set {
+    name  = "serviceAccount.create"
+    value = "true"
+  }
+  set {
+    name  = "serviceAccount.name"
+    value = "aws-load-balancer-controller"
+  }
+
+  set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = module.iam_irsa.alb_irsa_role_arn
+  }
+
+  set {
+    name  = "defaultTargetType"
+    value = "ip"
+  }
+
+  depends_on = [
+    module.iam_irsa,
+    null_resource.write_kubeconfig,
+    module.eks
+  ]
+}
+</file>
+
+<file path="outputs.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+output "region" {
+  description = "AWS region"
+  value       = var.region
+}
+
+# -------- EKS (from modules/eks wrapper) --------
+output "cluster_name" {
+  description = "EKS cluster name"
+  value       = module.eks.cluster_name
+}
+
+output "oidc_issuer_url" {
+  description = "EKS OIDC issuer URL"
+  value       = module.eks.oidc_issuer_url
+}
+
+output "cluster_security_group_id" {
+  description = "EKS cluster primary security group ID"
+  value       = module.eks.cluster_security_group_id
+}
+
+# Optional but useful for providers / debugging
+output "cluster_endpoint" {
+  description = "EKS cluster API endpoint"
+  value       = module.eks.cluster_endpoint
+}
+
+# -------- IAM / IRSA (keep if you're managing ALB IRSA outside EKS module) --------
+output "cluster_role_arn" {
+  description = "IAM role ARN for the EKS control plane"
+  value       = module.iam.cluster_role_arn
+}
+
+output "pod_execution_role_arn" {
+  description = "Fargate pod execution role ARN"
+  value       = module.iam.pod_execution_role_arn
+}
+
+# -------- Networking --------
+output "vpc_id" {
+  description = "VPC ID"
+  value       = module.vpc.vpc_id
+}
+
+output "private_subnet_ids" {
+  description = "Private subnet IDs used by EKS/Fargate"
+  value       = module.vpc.private_subnet_ids
+}
+</file>
+
+<file path="terraform.tfvars.example">
+###############################################################################
+# Example terraform.tfvars
+# -----------------------------------------------------------------------------
+# Copy this file to your environment directory (e.g., env/dev/terraform.tfvars)
+# and fill in the placeholders. Do NOT commit real credentials or secrets.
+###############################################################################
+
+region                      = "us-east-1"      # AWS region where the EKS cluster will be deployed
+environment                 = "dev"            # Environment name (e.g., dev, staging, prod)
+owner                       = "YOUR_NAME_HERE" # Used for tagging and ownership tracking
+identifier                  = "PROJECT_PREFIX" # Short prefix for resource names (e.g., g-dev, sample, test)
+public_access_cidrs         = ["YOUR_IP/32"]   # Restrict access to your IP (e.g., ["123.45.67.89/32"])
+grafana_admin_user_arn      = "arn"            # Grafana admin user Secret ARN
+grafana_admin_pwd_arn       = "arn"            # Grafana admin password Secret ARN
+enable_https                = false            # Enable HTTPS (Requires Certificate Configuration)
+self_signed_certificate_arn = "arn"            # Certificate for HTTPS
+</file>
+
+<file path="docs/architecture.md">
+# Architecture/System Configuration
+
+---
+
+## Core Components & Responsibilities
+
+1. VPC Module
+   - Creates a VPC with public/private subnets across AZs.
+   - NAT gateways, route tables, and subnet associations.
+   - Produces subnet IDs consumed by EKS or other modules.
+
+2. EKS Module
+   - Creates the EKS control plane (managed by AWS).
+   - Uses Fargate profiles to run pods serverless (no EC2 nodegroups by default).
+   - Outputs kubeconfig and cluster details that operators use with kubectl.
+
+3. IAM / IRSA Modules
+   - Create IAM roles and policies needed by the cluster.
+   - Configure IRSA (IAM Roles for Service Accounts) for controllers such as the AWS Load Balancer Controller and Grafana.
+   - Keeps permissions scoped to the minimum needed.
+
+4. AWS Load Balancer Controller (Helm via Terraform)
+   - Deploys controller that converts Kubernetes Service/Ingress resources into AWS ELB resources (ALB/NLB).
+   - Uses IRSA for permissions to manage ELB resources.
+
+5. Monitoring: Grafana (Ready-to-use)
+   - Grafana is deployed as part of the stack.
+
+---
+
+## Data Flow
+
+Internet -> NLB (or ALB) -> Security Group -> Fargate Pod -> EKS Control Plane -> AWS Services
+
+- The AWS Load Balancer Controller observes Services/Ingress in Kubernetes and creates the corresponding AWS load balancer resources (target groups, listeners).
+- Fargate pods use ENIs for networking; these ENIs live in your VPC and can prevent deletion of VPC/subnet resources if not removed first.
+
+---
+
+## Resilience & Security Patterns
+
+- IRSA for least-privilege pod permissions.
+- Separate environments via `env/<env>/terraform.tfvars`.
+- Remote state via S3 and DynamoDB (locking) to prevent concurrent modifications.
+
+---
+
+## Extending the Architecture
+
+- Add additional Fargate profiles per namespace for cost separation.
+- Add node groups (EC2) if workloads require host-level access or special drivers.
+- Add service mesh or ingress controller if you need L7 routing features not provided by NLB.
+
+---
+</file>
+
+<file path="modules/eks/provider.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.95"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
+    }
+  }
+}
+</file>
+
+<file path="CHANGELOG.md">
+# Changelog
+
+## [v0.1.0] - 2025-10-24
+### 🎯 Initial Stable Release
+- Finalized Terraform AWS EKS Microservice Framework
+- Supports:
+  - AWS VPC, IAM, Security, and EKS (Fargate)
+  - Grafana with ephemeral Storage
+  - AWS Load Balancer Controller with ALB ingress
+- Includes:
+  - Complete `Makefile` automation for deploy/destroy and cleanup (ALBs, ENIs, K8s)
+  - Environment variable examples (`env/dev/backend.hcl`, `terraform.tfvars`)
+  - Full documentation under `/docs` for setup, architecture, troubleshooting, and contributing
+- Verified clean apply/destroy cycles
+- Ready for multi-environment use
+
+----
+
+## [v0.2.0] - 2025-10-30
+### 🎯 Secrets Manager Credential Handler
+- Added Secrets Manager Import for Grafana Credentials.
+  - Values are plugged into Secrets Manager via AWS Console, and Secrets are imported into the Grafana Module
+
+----
+
+## [v0.3.0] - 2025-11-02
+### 🎯 HTTPS w/ Certificate Enablement
+- Added HTTPS functionality to Grafana
+  - `enable_https` is configured in the .tfvars (within env/<directory>) and uses the certificate_arn in .tfvars to configure HTTPS connections
+
+----
+
+## [v1.0.0] - 2025-11-02
+### 🚀 Production Baseline Release
+- Marked as the first **stable, feature-complete** release of the Terraform AWS EKS Microservice Framework.
+- Framework now supports:
+  - Full **EKS Fargate-only** environment (no EC2 workers)
+  - **ALB ingress** via AWS Load Balancer Controller
+  - **Grafana deployment** with Helm and namespace isolation
+  - **HTTPS toggle** using `enable_https` in `.tfvars`
+  - Support for both **IAM server certificates** and **ACM certificates**
+- Security and networking:
+  - Dynamic **Security Group rules** tied to `enable_https`
+  - IP confirmation guardrail for safe public access
+  - Clean teardown with automatic ALB, ENI, and tag cleanup
+- Automation & Dev Experience:
+  - Streamlined **Makefile commands** for init, plan, apply, destroy, and forced cleanup
+  - Modular structure with reusable patterns for future add-ons
+  - Supports **custom environments** (`env/dev`, `env/stage`, etc.)
+
+### 🧭 Next Milestone (v1.1.0 - In Progress)
+- Add **EFS persistent storage** integration for Grafana
+  - Optional flag-based persistence (`enable_persistence`)
+  - Provisioned via EFS CSI driver and StorageClass
+- Add automated **dashboard retention** and **SSL redirect logic**
+- Improved test coverage for multi-environment pipelines
+</file>
+
+<file path="variables.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+variable "region" {
+  type        = string
+  description = "AWS Region to be associated with the deployment."
+  default     = "us-east-1"
+}
+
+variable "environment" {
+  type        = string
+  description = "The environment for the resources (e.g., dev, staging, prod)."
+}
+
+variable "owner" {
+  type        = string
+  description = "The owner of the resources."
+}
+
+variable "identifier" {
+  type        = string
+  description = "A unique identifier for the resources."
+}
+
+variable "public_access_cidrs" {
+  type        = list(string)
+  description = "CIDRs allowed to reach the public EKS API"
+  default     = ["0.0.0.0/0"]
+}
+
+variable "grafana_admin_user_arn" {
+  description = "ARN of the secret storing the Grafana admin username"
+  type        = string
+}
+
+variable "grafana_admin_pwd_arn" {
+  description = "ARN of the secret storing the Grafana admin password"
+  type        = string
+}
+
+variable "self_signed_certificate_arn" {
+  description = "ARN of the secret storing the TLS certificate for the ALB"
+  type        = string
+}
+
+variable "enable_https" {
+  type    = bool
+  default = false
+}
+</file>
+
+<file path="modules/eks/variables.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+variable "vpc_id" {
+  type        = string
+  description = "The ID of the VPC where the EKS cluster will be deployed."
+
+}
+
+variable "common_tags" {
+  type        = map(string)
+  description = "A map of common tags to apply to all resources."
+  default     = {}
+}
+
+variable "private_subnet_ids" {
+  type        = list(string)
+  description = "A list of subnet IDs for the EKS cluster."
+}
+
+variable "identifier" {
+  type        = string
+  description = "A unique identifier for the resources."
+}
+
+variable "cluster_role_arn" {
+  type        = string
+  description = "The ARN of the IAM role for the EKS cluster."
+}
+
+variable "pod_execution_role_arn" {
+  type        = string
+  description = "The ARN of the IAM role for EKS pod execution."
+
+}
+
+variable "public_access_cidrs" {
+  type        = list(string)
+  description = "Allowed CIDRs for public EKS API access (only used if public access is enabled)"
+  default     = ["0.0.0.0/0"]
+}
+</file>
+
+<file path="modules/iam/main.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# modules/iam/main.tf
+# Core IAM: (1) EKS cluster role  (2) Fargate pod execution role
+# No OIDC or ALB IRSA here (those go to modules/iam_irsa after cluster exists)
+
+/*
+----------------------------
+* Resource: EKS Cluster IAM Policy Document
+* Description: Creates an IAM policy document for the EKS cluster role.
+* Variables: None
+----------------------------
+*/
+data "aws_iam_policy_document" "eks_cluster_iam_policy_document" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["eks.amazonaws.com"]
+    }
+  }
+}
+
+/*
+-------------------------
+* Resource: EKS Cluster Role
+* Description: Creates an IAM role for the EKS cluster with the necessary policies attached.
+* Variables:
+  - common_tags
+-------------------------
+*/
+resource "aws_iam_role" "eks_cluster_role" {
+  name               = "eks_cluster_role"
+  assume_role_policy = data.aws_iam_policy_document.eks_cluster_iam_policy_document.json
+  tags               = var.common_tags
+}
+
+/*
+-------------------------
+* Resource: EKS Cluster Role Policy Attachments
+* Description: Attaches necessary policies to the EKS cluster role.
+* Variables: None
+-------------------------
+*/
+resource "aws_iam_role_policy_attachment" "eks_cluster_AmazonEKSClusterPolicy" {
+  role       = aws_iam_role.eks_cluster_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+}
+
+/*
+-------------------------
+* Resource: EKS Pod Execution Role IAM Policy Document
+* Description: Creates an IAM policy document for the EKS pod execution role.
+* Variables: None
+-------------------------
+*/
+data "aws_iam_policy_document" "eks_pod_execution_role_iam_policy_document" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["eks-fargate-pods.amazonaws.com"]
+    }
+  }
+}
+
+/*
+-------------------------
+* Resource: EKS Pod Execution Role
+* Description: Creates an IAM role for EKS pods running on Fargate with necessary policies attached.
+* Variables:
+  - common_tags
+-------------------------
+*/
+resource "aws_iam_role" "eks_pod_execution_role" {
+  name               = "eks_pod_execution_role"
+  assume_role_policy = data.aws_iam_policy_document.eks_pod_execution_role_iam_policy_document.json
+  tags               = var.common_tags
+}
+
+/*
+-------------------------
+* Resource: EKS Pod Execution Role Policy Attachments
+* Description: Attaches Fargate Execution Policy to the EKS pod execution role.
+* Variables: None
+-------------------------
+*/
+resource "aws_iam_role_policy_attachment" "eks_pod_AmazonEKSFargatePodExecutionRolePolicy" {
+  role       = aws_iam_role.eks_pod_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
+}
+
+/*
+-------------------------
+* Resource: EKS Pod Execution Role CloudWatch Agent Policy Attachment
+* Description: Attaches CloudWatch Agent Server Policy to the EKS pod execution role.
+* Variables: None
+-------------------------
+*/
+resource "aws_iam_role_policy_attachment" "eks_pod_CloudWatchAgentServerPolicy" {
+  role       = aws_iam_role.eks_pod_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+</file>
+
+<file path="modules/grafana/main.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+/*
+------------------------
+* Resource: Grafana Admin and Password Secrets
+* Description: Secret for Grafana admin user/password
+* Variables:
+  - grafana_user_arn
+  - grafana_pwd_arn
+------------------------
+*/
+data "aws_secretsmanager_secret_version" "sm_user_version" {
+  secret_id = var.grafana_user_arn
+}
+
+data "aws_secretsmanager_secret_version" "sm_pwd_version" {
+  secret_id = var.grafana_pwd_arn
+}
+
+locals {
+  grafana_admin_user = sensitive(data.aws_secretsmanager_secret_version.sm_user_version.secret_string)
+  grafana_admin_pwd  = sensitive(data.aws_secretsmanager_secret_version.sm_pwd_version.secret_string)
+}
+
+
+/*
+-------------------------
+* Resource: Kubernetes Namespace
+* Description: Creates a Kubernetes namespace for monitoring resources.
+* Variables: None
+-------------------------
+*/
+resource "kubernetes_namespace" "monitoring" {
+  metadata { name = "monitoring" }
+}
+
+/*
+-------------------------
+* Resource: Helm Release for Grafana
+* Description: Deploys Grafana using the official Helm chart with ALB ingress.
+* Variables:
+  - grafana_admin_user
+  - grafana_admin_password
+  - region
+-------------------------
+*/
+resource "helm_release" "grafana" {
+  name            = "grafana"
+  namespace       = kubernetes_namespace.monitoring.metadata[0].name
+  repository      = "https://grafana.github.io/helm-charts"
+  chart           = "grafana"
+  version         = "8.5.12"
+  wait            = true
+  timeout         = 900
+  atomic          = true
+  cleanup_on_fail = true
+
+  set {
+    name  = "persistence.enabled"
+    value = "false"
+  }
+
+  set {
+    name  = "readinessProbe.enabled"
+    value = "true"
+  }
+  set {
+    name  = "readinessProbe.initialDelaySeconds"
+    value = "60"
+  }
+  set {
+    name  = "readinessProbe.periodSeconds"
+    value = "10"
+  }
+  set {
+    name  = "livenessProbe.enabled"
+    value = "true"
+  }
+  set {
+    name  = "livenessProbe.initialDelaySeconds"
+    value = "90"
+  }
+  set {
+    name  = "livenessProbe.periodSeconds"
+    value = "10"
+  }
+
+  set {
+    name  = "service.type"
+    value = "ClusterIP"
+  }
+  set {
+    name  = "service.port"
+    value = "80"
+  }
+  set {
+    name  = "service.targetPort"
+    value = "3000"
+  }
+
+  set {
+    name  = "adminUser"
+    value = local.grafana_admin_user
+  }
+  set {
+    name  = "adminPassword"
+    value = local.grafana_admin_pwd
+  }
+
+  set {
+    name  = "serviceAccount.create"
+    value = "true"
+  }
+  set {
+    name  = "serviceAccount.name"
+    value = "grafana"
+  }
+
+  set {
+    name  = "env.AWS_REGION"
+    value = var.region
+  }
+
+  set {
+    name  = "ingress.enabled"
+    value = "true"
+  }
+  set {
+    name  = "ingress.ingressClassName"
+    value = "alb"
+  }
+  set {
+    name  = "ingress.annotations.kubernetes\\.io/ingress\\.class"
+    value = "alb"
+  }
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/scheme"
+    value = "internet-facing"
+  }
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/target-type"
+    value = "ip"
+  }
+
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/certificate-arn"
+    value = var.enable_https ? var.self_signed_certificate_arn : ""
+  }
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/listen-ports"
+    value = var.enable_https ? "[{\"HTTPS\":443}]" : "[{\"HTTP\":80}]"
+  }
+
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/backend-protocol"
+    value = "HTTP"
+  }
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/healthcheck-protocol"
+    value = "HTTP"
+  }
+
+  set {
+    name  = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/healthcheck-path"
+    value = "/api/health"
+  }
+
+  set {
+    name  = "ingress.path"
+    value = "/"
+  }
+  set {
+    name  = "ingress.pathType"
+    value = "Prefix"
+  }
+
+  set {
+    name  = "ingress.hosts[0]"
+    value = ""
+  }
+
+  depends_on = [
+    kubernetes_namespace.monitoring,
+  ]
+}
+
+/*
+-------------------------
+* Resource: Null Resource to Strip Bad ALB Tags
+* Description: Removes invalid tags from the ALB created by the Grafana Helm chart.
+* Variables: None
+-------------------------
+*/
+resource "null_resource" "strip_bad_alb_tags" {
+  triggers = {
+    rel = helm_release.grafana.version
+  }
+  provisioner "local-exec" {
+    command = <<-EOC
+      set -euo pipefail
+      kubectl -n monitoring annotate ingress grafana alb.ingress.kubernetes.io/tags- || true
+    EOC
+  }
+  depends_on = [helm_release.grafana]
+}
+</file>
+
+<file path="modules/eks/main.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+/*
+----------------------------
+* Module: EKS
+* Description: Creates an EKS cluster with Fargate profiles and configures CoreDNS to run on Fargate.
+* Variables required:
+  - identifier
+  - public_access_cidrs
+  - cluster_role_arn
+  - vpc_id
+  - private_subnet_ids
+  - common_tags
+----------------------------
+*/
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 20.0"
+
+  cluster_name    = "${var.identifier}-eks-cluster"
+  cluster_version = "1.33"
+
+  cluster_endpoint_private_access          = true
+  cluster_endpoint_public_access           = true
+  cluster_endpoint_public_access_cidrs     = var.public_access_cidrs
+  enable_cluster_creator_admin_permissions = true
+  enable_irsa                              = true
+  iam_role_arn                             = var.cluster_role_arn
+
+  vpc_id     = var.vpc_id
+  subnet_ids = var.private_subnet_ids
+
+  cluster_addons = {
+    coredns = {
+      most_recent       = true
+      resolve_conflicts = "OVERWRITE"
+
+      configuration_values = jsonencode({
+        # force CoreDNS onto Fargate
+        computeType = "Fargate"
+        nodeSelector = {
+          "eks.amazonaws.com/compute-type" = "fargate"
+        }
+        tolerations = [{
+          key      = "eks.amazonaws.com/compute-type"
+          operator = "Equal"
+          value    = "fargate"
+          effect   = "NoSchedule"
+        }]
+        resources = {
+          limits   = { cpu = "0.25", memory = "256M" }
+          requests = { cpu = "0.25", memory = "256M" }
+        }
+      })
+    }
+    kube-proxy = {}
+    vpc-cni    = {}
+  }
+
+  fargate_profile_defaults = {
+    pod_execution_role_arn = var.pod_execution_role_arn
+    subnet_ids             = var.private_subnet_ids
+  }
+
+  fargate_profiles = {
+    kube_system = {
+      name = "kube-system"
+      selectors = [
+        # Default namespace pods
+        { namespace = "default" },
+
+        # Monitoring namespace pods
+        { namespace = "monitoring" },
+
+        # CoreDNS pods in kube-system
+        {
+          namespace = "kube-system"
+          labels = {
+            k8s-app = "kube-dns"
+          }
+        },
+
+        # AWS Load Balancer Controller pods
+        {
+          namespace = "kube-system"
+          labels = {
+            "app.kubernetes.io/name" = "aws-load-balancer-controller"
+          }
+        }
+      ]
+    }
+  }
+
+  tags = var.common_tags
+
+}
+</file>
+
+<file path="Makefile">
+# ==============================
+# Makefile (root-driven Terraform)
+# ==============================
+.ONESHELL:
+SHELL := /bin/bash
+
+ENV    ?= dev
+TFVARS ?= env/$(ENV)/terraform.tfvars
+BACKEND ?= env/$(ENV)/backend.hcl
+TF := terraform
+
+# Stops command (plan/apply/destroy) if tfvars/backend files are missing
+_guard_tfvars:
+	@{ \
+	  set -euo pipefail; \
+	  if [ ! -f "$(TFVARS)" ]; then \
+	    echo "Missing $(TFVARS). Create it or set ENV=<env>"; \
+	    exit 1; \
+	  fi; \
+	}
+
+# Stops init if backend file is missing
+_guard_backend:
+	@{ \
+	  set -euo pipefail; \
+	  if [ ! -f "$(BACKEND)" ]; then \
+	    echo "Missing $(BACKEND). Create it (S3/Dynamo backend config) or set ENV=<env>"; \
+	    exit 1; \
+	  fi; \
+	}
+
+# Updates destroy process to forcibly clean up K8s/Helm resources first
+_force_k8s_purge:
+	@{ \
+	  echo "============================> Forcing local K8s cleanup (Grafana ns/etc)"; \
+	  set -euo pipefail; \
+	  CLUSTER="$$(terraform output -raw cluster_name 2>/dev/null || true)"; \
+	  REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}"; \
+	  if [ -z "$$CLUSTER" ]; then \
+	    echo "↪ No cluster_name output; skipping kube cleanup."; \
+	    exit 0; \
+	  fi; \
+	  aws eks update-kubeconfig --name "$$CLUSTER" --region "$$REGION" >/dev/null 2>&1 || true; \
+	  if ! kubectl --request-timeout=5s get ns >/dev/null 2>&1; then \
+	    echo "↪ API not reachable; skipping kube cleanup."; \
+	    exit 0; \
+	  fi; \
+	  helm -n monitoring uninstall grafana --no-hooks --timeout 20s >/dev/null 2>&1 || true; \
+	  helm -n kube-system uninstall aws-load-balancer-controller --no-hooks --timeout 20s >/dev/null 2>&1 || true; \
+	  kubectl -n monitoring delete ingress,svc,deploy,statefulset,job,cronjob,cm,secret --all --ignore-not-found --wait=false >/dev/null 2>&1 || true; \
+	  kubectl -n monitoring delete pod --all --force --grace-period=0 --ignore-not-found >/dev/null 2>&1 || true; \
+	  kubectl delete namespace monitoring --ignore-not-found --wait=false >/dev/null 2>&1 || true; \
+	  if kubectl get ns monitoring -o json >/dev/null 2>&1; then \
+	    kubectl get ns monitoring -o json | jq 'del(.spec.finalizers)' | kubectl replace --raw "/api/v1/namespaces/monitoring/finalize" -f - >/dev/null 2>&1 || true; \
+	  fi; \
+	  echo "============================> K8s cleanup kicked off (non-blocking). Proceeding to AWS purge."; \
+	}
+
+# Cleans up leftover AWS network resources (ALBs/ENIs) before destroy
+_aws_net_purge:
+	@{ \
+	  echo "============================> Pre-cleaning ALBs & ENIs in this env"; \
+	  set -euo pipefail; \
+	  REGION="$$(terraform output -raw region 2>/dev/null || true)"; \
+	  VPC_ID="$$(terraform output -raw vpc_id 2>/dev/null || true)"; \
+	  [ -z "$$REGION" ] && REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}"; \
+	  echo "  → region=$$REGION vpc=$$VPC_ID"; \
+	  aws elbv2 describe-load-balancers --region "$$REGION" \
+	    --query 'LoadBalancers[?VpcId==`'$$VPC_ID'`].LoadBalancerArn' --output text 2>/dev/null | \
+	    xargs -r -n1 aws elbv2 delete-load-balancer --region "$$REGION" --load-balancer-arn >/dev/null 2>&1 || true; \
+	  for eni in $$(aws ec2 describe-network-interfaces --region "$$REGION" \
+	      --filters Name=vpc-id,Values=$$VPC_ID \
+	      --query 'NetworkInterfaces[].{Id:NetworkInterfaceId,Att:Attachment.AttachmentId}' \
+	      --output text 2>/dev/null); do \
+	    set -- $$eni; \
+	    ENI="$${1:-}"; \
+	    ATT="$${2:-}"; \
+	    [ -z "$$ENI" ] && continue; \
+	    if [ -n "$$ATT" ] && [ "$$ATT" != "None" ]; then \
+	      aws ec2 detach-network-interface --region "$$REGION" --attachment-id "$$ATT" >/dev/null 2>&1 || true; \
+	    fi; \
+	    aws ec2 delete-network-interface --region "$$REGION" --network-interface-id "$$ENI" >/dev/null 2>&1 || true; \
+	  done; \
+	}
+
+# Currently there's an underlying dependency bug with VPC deletion in TF; this removes it from state to allow additional deletion step after destroy
+_state_rm_vpc:
+	@echo "============================> Removing VPC from Terraform state (and caching VPC ID)"
+	@set -eu; \
+	REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}"; \
+	IDENTIFIER="$$(TF_IN_AUTOMATION=1 $(TF) output -raw identifier 2>/dev/null || echo "main")"; \
+	CLUSTER_NAME="$${IDENTIFIER}-eks-cluster"; \
+	VPC_ID="$$(TF_IN_AUTOMATION=1 $(TF) output -raw vpc_id 2>/dev/null || true)"; \
+	if [ -z "$$VPC_ID" ] || ! echo "$$VPC_ID" | grep -q '^vpc-'; then \
+	  VPC_ID="$$(aws eks describe-cluster --region $$REGION --name $$CLUSTER_NAME \
+	    --query 'cluster.resourcesVpcConfig.vpcId' --output text 2>/dev/null || true)"; \
+	fi; \
+	if echo "$$VPC_ID" | grep -q '^vpc-'; then \
+	  printf "%s\n" "$$VPC_ID" > .last_vpc_id; \
+	  echo "  → cached VPC ID: $$VPC_ID"; \
+	else \
+	  echo "  → no VPC ID found to cache (that’s okay)"; \
+	fi; \
+	-@$(TF) state rm 'module.vpc.module.vpc.aws_vpc.this[0]' >/dev/null 2>&1 || true
+
+# Force deletes the VPC after destroy by attempting deletion multiple times (to allow for dependency cleanup)
+_force_delete_vpc:
+	@echo "============================> Forcibly deleting VPC from AWS (if still exists)" \
+	@set -euo pipefail; \
+	VPC_ID="$$(cat .last_vpc_id 2>/dev/null || true)"; \
+	[ -z "$$VPC_ID" ] && { echo "↪ No cached VPC ID — skipping."; exit 0; }; \
+	REGION="$${AWS_REGION:-$${AWS_DEFAULT_REGION:-us-east-1}}"; \
+	# If VPC doesn't exist anymore, exit immediately
+	if ! aws ec2 describe-vpcs --vpc-ids "$$VPC_ID" --region "$$REGION" >/dev/null 2>&1; then \
+	  echo "============================>  VPC $$VPC_ID already deleted or not found."; \
+	  rm -f .last_vpc_id >/dev/null 2>&1 || true; \
+	  exit 0; \
+	fi; \
+	# Attempt up to 5 times (with small delay)
+	for i in $$(seq 1 5); do \
+	  if aws ec2 delete-vpc --region "$$REGION" --vpc-id "$$VPC_ID" >/dev/null 2>&1; then \
+	    rm -f .last_vpc_id >/dev/null 2>&1 || true; \
+	    echo "============================> VPC $$VPC_ID deleted"; \
+	    exit 0; \
+	  fi; \
+	  sleep 3; \
+	done; \
+	echo "============================>  Skipped VPC $$VPC_ID — already removed or pending AWS cleanup."
+
+# Confirms IP to use for EKS API access and saves to .make_env_public_access
+_confirm_ip:
+	@IP="$$(curl -s https://checkip.amazonaws.com)"; \
+	TFVARS_IP="$$(grep -E 'public_access_cidrs' $(TFVARS) 2>/dev/null | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/32' | head -n1)"; \
+	echo "============================> Detected current public IP: $$IP"; \
+	if [ -n "$$TFVARS_IP" ]; then \
+	  echo "============================> IP configured in $(TFVARS): $$TFVARS_IP"; \
+	else \
+	  echo "============================>  No public_access_cidrs found in $(TFVARS)"; \
+	fi; \
+	read -r -p "Use the IP from $(TFVARS) (y/N)? " USE_TFVARS; \
+	case "$$USE_TFVARS" in \
+	  [yY]) CIDR="$$TFVARS_IP";; \
+	  *) read -r -p "Enter IP/CIDR to use (detected $$IP/32): " CIDR; \
+	     [ -z "$$CIDR" ] && CIDR="$$IP/32";; \
+	esac; \
+	printf "export TF_VAR_public_access_cidrs='[\"%s\"]'\n" "$$CIDR" > .make_env_public_access; \
+	echo "============================> Will allow $$CIDR (saved to .make_env_public_access)"
+
+# Initializes Terraform with backend and all modules found in modules/ (Not including .* dirs)
+init: _guard_backend
+	@echo "🚀 Initializing Terraform (root) with backend $(BACKEND)"
+	@$(TF) init -upgrade -reconfigure -backend-config=$(BACKEND)
+	@echo "============================> Initializing all modules..."
+	@for dir in $$(find modules -mindepth 1 -maxdepth 1 -type d ! -name ".*"); do \
+		echo "→ Initializing $$dir"; \
+		cd $$dir && $(TF) init -upgrade >/dev/null && cd - >/dev/null; \
+	done
+	@echo "============================> All Terraform modules initialized"
+
+# Terraform plan using env tfvars and outputs to plan file
+plan: _guard_tfvars
+	@echo "============================> Planning for $(ENV)"
+	$(MAKE) _confirm_ip
+	@. ./.make_env_public_access; \
+	$(TF) plan -var-file=$(TFVARS) -out=plan-$(ENV).tfplan
+
+# Applies previously generated plan file
+apply:
+	@echo "============================> Applying plan for $(ENV)"
+	$(TF) apply "plan-$(ENV).tfplan"
+
+# Destroy resources for the selected environment including above pre-cleanup steps
+destroy: _guard_tfvars
+	@echo "============================> Destroying $(ENV)"
+	$(MAKE) -s _aws_net_purge
+	$(MAKE) -s _force_k8s_purge
+	$(MAKE) -s _state_rm_vpc
+	$(TF) destroy -var-file=$(TFVARS) -refresh=true -lock-timeout=5m
+	$(MAKE) -s _force_delete_vpc
+
+# Validates Terraform configuration syntax at root
+validate:
+	@echo "============================> Validating"
+	$(TF) validate
+
+# ==============================
+# Quality & Docs
+# ==============================
+
+# Formats your Terraform files
+fmt:
+	@echo "============================> Formatting"
+	$(TF) fmt -recursive
+
+# Runs pre-commit hooks against all files
+lint:
+	@echo "============================> Running pre-commit hooks"
+	pre-commit run --all-files
+
+# Generates terraform-docs for all modules in modules/
+docs:
+	@echo "============================> Generating module documentation"
+	@for d in modules/*; do \
+	  if [ -d "$$d" ]; then \
+	    echo "==> $$d"; \
+	    terraform-docs markdown table $$d > $$d/README.md; \
+	  fi; \
+	done
+
+# ==============================
+# Utility
+# ==============================
+
+# Cleans up local Terraform files
+clean:
+	@echo "============================> Cleaning"
+	rm -rf .terraform .terraform.lock.hcl plan-*.tfplan
+
+# Displays help information
+help:
+	@echo "Available targets:"
+	@echo ""
+	@echo "Core:"
+	@echo "  init        - Initialize Terraform backend/config for ENV using $(BACKEND)"
+	@echo "  plan        - Generate Terraform plan using env tfvars -> plan-$(ENV).tfplan"
+	@echo "  apply       - Apply Terraform changes using plan-$(ENV).tfplan"
+	@echo "  destroy     - Destroy resources for the selected environment"
+	@echo ""
+	@echo "Utility:"
+	@echo "  validate    - Validate Terraform configuration syntax"
+	@echo "  fmt         - Format all Terraform files"
+	@echo "  lint        - Run pre-commit checks"
+	@echo "  docs        - Generate terraform-docs for all modules"
+	@echo "  clean       - Remove local Terraform caches and plan files"
+	@echo ""
+	@echo "Usage: make <target> [ENV=dev|test|prod] or export ENV=dev"
+
+.PHONY: init plan apply destroy validate fmt lint docs clean help
+.DEFAULT_GOAL := help
+</file>
+
+<file path="main.tf">
+# Copyright 2025 Darian Lee
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+/*
+-------------------------
+Terraform Settings
+-------------------------
+*/
+terraform {
+  required_version = ">= 1.5.0"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.95"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.13"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.29"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
+    }
+  }
+
+  backend "s3" {}
+}
+
+/*
+-------------------------
+Data Source helpers for EKS cluster access
+-------------------------
+*/
+resource "null_resource" "write_kubeconfig" {
+  triggers = {
+    cluster = module.eks.cluster_name
+    region  = var.region
+  }
+
+  depends_on = [module.eks]
+
+  provisioner "local-exec" {
+    command = "aws eks update-kubeconfig --name ${module.eks.cluster_name} --region ${var.region}"
+  }
+}
+
+data "aws_eks_cluster" "eks" {
+  name       = module.eks.cluster_name
+  depends_on = [module.eks]
+}
+
+data "aws_eks_cluster_auth" "eks" {
+  name       = module.eks.cluster_name
+  depends_on = [module.eks]
+}
+
+provider "kubernetes" {
+  host                   = data.aws_eks_cluster.eks.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.eks.token
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = data.aws_eks_cluster.eks.endpoint
+    cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)
+    token                  = data.aws_eks_cluster_auth.eks.token
+  }
+}
+
+provider "aws" {
+  region = var.region
+}
+
+/*
+-------------------------
+Setting Resource Tag Variables
+-------------------------
+*/
+locals {
+  common_tags = {
+    Identifier  = var.identifier
+    Environment = var.environment
+    Owner       = var.owner
+  }
+}
+
+/*
+-------------------------
+Module responsible for EKS configuration
+and Fargate Profile setup
+-------------------------
+*/
+module "eks" {
+  source                 = "./modules/eks/"
+  identifier             = var.identifier
+  vpc_id                 = module.vpc.vpc_id
+  common_tags            = local.common_tags
+  private_subnet_ids     = module.vpc.private_subnet_ids
+  cluster_role_arn       = module.iam.cluster_role_arn
+  pod_execution_role_arn = module.iam.pod_execution_role_arn
+  public_access_cidrs    = var.public_access_cidrs
+  depends_on             = [module.vpc]
+}
+
+/*
+-------------------------
+Module responsible for Cluster
+and Pod execution role
+-------------------------
+*/
+module "iam" {
+  source      = "./modules/iam"
+  common_tags = local.common_tags
+}
+
+/*
+-------------------------
+Module responsible for IAM Roles
+for Service Accounts (IRSA)
+-------------------------
+*/
+module "iam_irsa" {
+  source            = "./modules/iam_irsa"
+  common_tags       = local.common_tags
+  oidc_issuer_url   = module.eks.oidc_issuer_url
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  depends_on        = [module.eks]
+}
+
+/*
+-------------------------
+Module responsible for Grafana deployment
+-------------------------
+*/
+module "grafana" {
+  source                      = "./modules/grafana"
+  region                      = var.region
+  enable_https                = var.enable_https
+  grafana_user_arn            = var.grafana_admin_user_arn
+  grafana_pwd_arn             = var.grafana_admin_pwd_arn
+  self_signed_certificate_arn = var.self_signed_certificate_arn
+  depends_on = [
+    module.eks,
+    helm_release.aws_load_balancer_controller
+  ]
+}
+
+/*
+-------------------------
+Module responsible for VPC creation
+-------------------------
+*/
+module "vpc" {
+  source      = "./modules/vpc"
+  environment = var.environment
+  identifier  = var.identifier
+  common_tags = local.common_tags
+}
+</file>
+
+<file path="README.md">
+# terraform-aws-eks-microservice-framework
+
+A modular, production-ready Terraform framework for deploying Amazon EKS and running microservices (Fargate-backed). This repository provisions networking, IAM/IRSA, the EKS control plane, the AWS Load Balancer Controller, and a ready-to-use Grafana deployment so teams can stand up a repeatable EKS environment.
+
+---
+
+## Project / Goal / Who this is for
+
+- Goal: Provide a repeatable, auditable baseline to provision a full EKS platform (Fargate profiles), CI-friendly Terraform modules, monitoring (Grafana with ephemeral storage), and load balancing integration (ALB/NLB) using opinionated, modular Terraform.
+- Who it's for: Infrastructure engineers, platform teams, and DevOps who need a production-oriented starting point for microservice deployments on AWS EKS with least-privilege IAM and clear operational procedures.
+- Typical uses: PoC, staging, and production clusters where Terraform manages infrastructure and provides an out-of-the-box Grafana that persists dashboards and plugins across redeploys.
+
+---
+
+## Prerequisites (fresh machine)
+
+Minimum recommended (tested): Terraform >= 1.6 (CI pins 1.9.x — see CI workflow), AWS CLI v2, Helm >= 3.8, kubectl matching EKS control plane, Python >= 3.10.
+
+Recommended packages (install on a fresh machine):
+
+- System tools
+  - git
+  - make
+  - curl, unzip
+  - jq (JSON CLI helper)
+  - yq (YAML CLI helper)
+- Docker Desktop (macOS/Windows) or docker-ce (Linux) — optional for building images
+- Terraform CLI (>= 1.6)
+- AWS CLI v2
+- kubectl (useful for manual inspection; not required for standard Makefile-driven deploy)
+- eksctl (optional; useful for some dev workflows)
+- Helm (>= 3.8)
+- Python 3.10+ and pip
+- pre-commit (pip install pre-commit)
+- terraform-docs (used by the Makefile docs target)
+- tflint (optional, recommended)
+- kubeconform (optional — used by pre-commit for k8s manifest validation)
+- Node.js + npm (optional; not required by the repo by default)
+- Windows: we recommend WSL2 (Ubuntu) for consistent Makefile behavior
+
+Installation examples
+
+macOS (Homebrew)
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew update
+brew install git make terraform awscli kubectl helm jq yq python3 pre-commit terraform-docs tflint
+# Install Docker Desktop from Docker site
+```
+
+Ubuntu (apt + distribution installers)
+```bash
+sudo apt update && sudo apt install -y git make unzip curl jq
+# Install Terraform via HashiCorp apt repo
+# Install AWS CLI v2 via bundled installer
+# Install kubectl and helm per vendor instructions
+python3 -m pip install --user pre-commit terraform-docs
+```
+
+Windows
+- Use WSL2 (Ubuntu recommended) or install native tools (Terraform, AWS CLI, kubectl, Helm, Docker Desktop) using choco/winget.
+
+---
+
+## First-time backend / bootstrap (recommended)
+
+You can create the backend resources manually or with a small helper. Example Terraform snippet to create a state S3 bucket & DynamoDB table (run in a separate one-off bootstrap workspace) can live in `scripts/bootstrap-backend.example.tf` (suggestion). If you prefer commands, create the S3 bucket and DynamoDB table via AWS console / CLI.
+
+Example backend.hcl (local file; do NOT commit):
+```hcl
+bucket         = "my-terraform-state-bucket"
+key            = "terraform-aws-eks-microservice-framework/ENV/terraform.tfstate"
+region         = "us-east-1"
+encrypt        = true
+dynamodb_table = "my-terraform-state-locks"
+```
+
+Usage:
+```bash
+make init
+```
+
+---
+
+## Quick first-time checklist (do these before running apply)
+1. Create remote state artifacts (S3 bucket + DynamoDB table) or have a backend.hcl ready:
+   - S3 bucket (private) for Terraform state
+   - DynamoDB table with partition key "LockID" for state locking (recommended)
+2. Copy example tfvars and populate required fields:
+   - `cp terraform.tfvars.example env/dev/terraform.tfvars`
+   - Edit `env/dev/terraform.tfvars` (see "env tfvars" below)
+3. Confirm your public IP with the repository helper (REQUIRED — see "_confirm_ip"):
+   - `make _confirm_ip`
+   - This ensures `public_access_cidrs` in your environment tfvars is set to the IP that should be permitted to access the EKS API (prevents accidentally opening public access).
+4. Create Secrets (Grafana User, Grafana Password) within AWS Secrets Manager (Plain Text Secret) to pass into the .tfvars file
+5. Create Certificate and upload to IAM Certificate Manager or ACM then copy the ARN into the .tfvars (If enabled in .tfvars)
+6. Ensure you have the minimum toolchain installed (Terraform, AWS CLI, kubectl, Helm, Python + pre-commit).
+7. Run: `make init` (or `terraform init -backend-config=backend.hcl`) and ensure init succeeds.
+
+Tip: Use a feature branch and open a PR so CI validates formatting and terraform validation before merging to main.
+
+---
+
+## EKS API Access — Why IP Configuration Matters
+
+Terraform (and Helm) must reach the EKS API endpoint during `apply`.
+If your public IP is not listed in `public_access_cidrs`, you’ll see TLS handshake
+or timeout errors even though the cluster exists.
+
+**Set your IP safely:**
+```bash
+make _confirm_ip
+```
+This command detects your current public IPv4 address and injects it into your environment
+tfvars file:
+
+```hcl
+public_access_cidrs = ["<your-ip>/32"]
+```
+
+**Why it’s required**
+- Prevents failed `kubectl` or `helm` calls that depend on API access.
+- Avoids accidentally exposing the cluster to the internet (`0.0.0.0/0`).
+- Keeps your deployments reproducible when switching networks or VPNs.
+
+**If skipped**
+- `terraform apply` may hang or fail with:
+  ```
+  could not get current server API group list:
+  net/http: TLS handshake timeout
+  ```
+- Helm charts and Kubernetes resources will not deploy.
+- Destroy operations may partially complete and leave residual resources.
+
+**In automation**
+- Once you move apply into CI/CD (inside AWS or GitOps), you can disable public access entirely
+  and remove the `_confirm_ip` step.
+
+---
+
+## _confirm_ip — confirm your IP before planning/deploying (REQUIRED)
+
+Why this exists
+- By default the repo can enable public access to the EKS API (controlled by `public_access_cidrs` TF variables). To protect the cluster and reduce mistakes when people run the plan/apply, we require a short confirmation step that captures and/or validates your public IP and writes it into the environment tfvars (or instructs you how to do it).
+- Running `_confirm_ip` prevents accidental wide-open public access and ensures the Terraform plan uses the intended CIDR (your office/home IP) for API access.
+
+What `make _confirm_ip` does (recommended implementation behavior)
+- Detects your current public IPv4 address using a safe external service (e.g., `https://checkip.amazonaws.com`).
+- Prints the detected IP and asks you to confirm ("Is this the correct IP to allow? (Y/n)").
+- On yes:
+  - It updates `env/$(ENV)/terraform.tfvars` (or creates it from example) to set `public_access_cidrs = ["<your_ip>/32"]` (or updates equivalent field).
+- On no:
+  - It prints instructions and a single command you can run to set the desired CIDR manually.
+  - It aborts without touching your tfvars so you can take manual action.
+
+How to run
+- Example (for dev environment):
+```bash
+# detect / confirm your IP and update env/dev/terraform.tfvars
+make _confirm_ip
+```
+
+Manual fallback
+- If you prefer to edit manually, open `env/dev/terraform.tfvars` and set:
+```hcl
+public_access_cidrs = ["203.0.113.45/32"]  # replace with your confirmed IP/CIDR
+```
+
+Security notes
+- Confirming your IP reduces accidental exposure, but do not rely on IP-based access as your only control. Use IAM, RBAC, and private endpoints where appropriate.
+- If you have a dynamic IP (e.g., home ISP), prefer using a VPN, bastion host, or private API endpoint instead of opening a public CIDR to the cluster.
+
+Enforcement guidance
+- We recommend treating `_confirm_ip` as mandatory in your onboarding checklist and adding a CI/PR checklist item that the contributor ran it locally before creating a plan PR.
+
+---
+
+## Environment tfvars — location and required fields
+
+The Makefile expects `env/$(ENV)/terraform.tfvars`. Copy `terraform.tfvars.example` to `env/dev/terraform.tfvars` and populate the values.
+
+Minimum fields (from terraform.tfvars.example and module variables):
+- `region` — AWS region (e.g., "us-east-1")
+- `environment` — environment name (e.g., "dev")
+- `owner` — owner tag / contact
+- `identifier` — short prefix for resource names
+- `public_access_cidrs` — list of CIDRs allowed for public API access
+- `grafana_admin_user_arn` — Arn for Secrets Manager Value (Grafana Admin)
+- `grafana_admin_pwd_arn` — Arn for Secrets Manager Value (Grafana Password)
+- `enable_https` - Boolean value (default false) to enable HTTPS on your Grafana Application (If true, needs to be setup with the below configured)
+- `self_signed_certificate_arn` - Arn for HTTPS Certificate (Optional)
+
+Security:
+- Never commit real credentials. Add `env/*` to `.gitignore` to avoid accidental commits.
+
+Secrets & recommended pattern
+- For production / public usage, store sensitive values (Grafana admin password, etc.) in SSM Parameter Store or Secrets Manager and reference them in Terraform (or inject them via CI secrets). Example pattern:
+  - Put secret into SSM: `aws ssm put-parameter --name "/project/dev/grafana_admin_pwd_arn" --type "SecureString" --value "<SECRET>"`
+  - Refer to SSM via Terraform data source `aws_ssm_parameter` with `with_decryption = true`.
+
+---
+
+## Grafana (ready-to-use) — primary feature
+
+This repository includes a Grafana deployment with ephemeral storage and exposed to Grafana.
+
+How to confirm (after apply)
+```bash
+terraform output -json | jq .
+```
+
+Grafana access
+- After apply, retrieve Grafana information using the Makefile convenience targets or Terraform outputs:
+  - `make outputs` (recommended — prints cluster outputs if available)
+- The repository intentionally avoids baking manual kubectl instructions into the standard deploy path — the platform deploys via Terraform (init/plan/apply) and application manifests should be managed by CI/GitOps or developer workflows outside of this Makefile-driven infra flow.
+
+---
+
+## Repository structure (relevant parts)
+
+- `main.tf` — root orchestration of modules
+- `variables.tf` — global inputs
+- `output.tf` — exported outputs
+- `alb_controller.tf` — AWS Load Balancer Controller Helm configuration
+- `Makefile` — convenience workflow targets (init, plan, apply, destroy, etc.)
+- `modules/*` — VPC, EKS, IAM, Grafana, etc.
+- `env/<env>/terraform.tfvars` — environment-specific variables (create these)
+- `env/<env>/backend.hcl` - environment-specific backend configuration (create this)
+- `docs/*` — architecture, contributing, troubleshooting
+- `.github/workflows/ci.yml` — CI pipeline (pre-commit, terraform validate, plan artifacts)
+
+---
+
+## Makefile: targets and explanations
+
+High-level targets (see Makefile for exact behavior):
+
+- `init`
+  - Initializes Terraform in root and each module: `terraform init -upgrade`
+  - Use after cloning & creating `env/*/backend.hcl` and `env/*/terraform.tfvars`.
+  - Example: `make init`
+
+- `plan`
+  - Runs `terraform plan -var-file=env/$(ENV)/terraform.tfvars -out=plan-$(ENV).tfplan`
+  - Guard: fails if TFVARS missing.
+  - Example: `make plan`
+
+- `apply`
+  - Applies the previously created plan file: `terraform apply "plan-$(ENV).tfplan"`
+
+- `destroy`
+  - Runs `terraform destroy -var-file=env/$(ENV)/terraform.tfvars`
+  - IMPORTANT: remove or ensure in-cluster resources (Helm releases, GitOps-managed resources, application workloads) are torn down before running destroy to avoid "resource in use" errors.
+
+- `validate`, `fmt`, `lint`, `docs`, `clean`, `help` — helper/quality targets (run `pre-commit`, `terraform fmt`, `terraform validate`, and generate module docs).
+
+- `grafana-url`
+  - Gets the Grafana endpoint URL (if the Makefile/terraform outputs are configured to provide it)
+
+Recommended additions (suggested changes you can add to the Makefile)
+- `make outputs` — convenience target to show key outputs:
+```makefile
+outputs:
+	@echo "Cluster name: $$(terraform output -raw cluster_name 2>/dev/null || echo '<not set>')"
+```
+
+---
+
+## Why ensure in-cluster resources are removed before `terraform destroy`
+
+Terraform destroy can fail with "resource in use" when cloud resources (ENIs, target groups) are still attached by Kubernetes controllers or pods.
+
+Why:
+- Kubernetes controllers (e.g., AWS Load Balancer Controller) create and manage AWS resources (target groups, listeners, NLB/ALB resources).
+- Fargate pods mount ENIs. AWS blocks deletion of VPC/subnets/SGs/resources while attachments exist.
+
+Recommended destroy ordering:
+1. Ensure application workloads, Helm releases, or GitOps-managed resources are removed from the cluster (use your deployment tooling or Helm/GitOps processes).
+2. Remove Grafana Helm release or application Helm charts unmount.
+3. Wait for pods and ENIs to be removed (verify in the AWS Console and/or Kubernetes dashboard).
+4. Run `make destroy`. If Terraform still errors, inspect state and remove blocking resources cautiously.
+
+Notes:
+- The Makefile intentionally does not perform destructive in-cluster deletions because that requires kubeconfig and is often organization-specific. Use your standard application lifecycle tooling to remove in-cluster resources before running Terraform destroy.
+
+---
+
+## Deploying with the Makefile (replaces earlier manual deploy guidance)
+
+This repository uses the Makefile workflow for the recommended deploy steps. The Makefile drives Terraform init/plan/apply and other convenience tasks so you do not need to run ad-hoc kubectl/helm commands as part of the standard infra deploy.
+
+Typical flow (from a fresh machine)
+1. Clone:
+```bash
+git clone https://github.com/its-d/terraform-aws-eks-microservice-framework.git
+cd terraform-aws-eks-microservice-framework
+```
+2. Configure Virtual Environment
+```bash
+# Create Virtual Environment
+python3 -m venv .venv
+
+# Enter/Use the Virtual Environment
+source .venv/bin/activate
+
+# Install packages
+pip install -r requirements.txt
+```
+
+3. Set your AWS_PROFILE/Credentials
+```bash
+export AWS_PROFILE=<PROFILE_NAME>
+```
+
+5. Create env folder
+```bash
+mkdir -p env/dev
+```
+
+6. Create `backend.hcl` locally (example above), do NOT commit it.
+```bash
+cp backend.hcl.example env/dev/backend.hcl
+# Edit env/dev/backend.hcl - populate required fields (see section above)
+```
+
+7. Create environment tfvars:
+```bash
+cp terraform.tfvars.example env/dev/terraform.tfvars
+# Edit env/dev/terraform.tfvars - populate required fields (see section above)
+```
+
+8. Confirm your IP (REQUIRED)
+```bash
+make _confirm_ip
+```
+
+9. Initialize Terraform:
+```bash
+make init
+```
+
+10. Plan:
+```bash
+make plan
+```
+
+11. Apply:
+```bash
+make apply
+```
+
+After apply
+- Grafana Endpoint is located within Load Balancer Service in the AWS Console.
+- Use `make outputs` (if available in the Makefile) to retrieve important values such as the cluster name, etc.
+- If your team manages application manifests (Helm, GitOps), apply them through your standard CI/GitOps pipeline rather than including them in the infra Makefile.
+
+This Makefile-driven flow avoids embedding ad-hoc kubectl commands in the README or in CI for provisioning infrastructure.
+
+---
+
+## CI and pre-commit
+
+- Install pre-commit and run locally:
+```bash
+pre-commit install
+pre-commit run --all-files
+```
+- CI runs the same hook set, installs pinned CLI tools (terraform-docs, kubeconform, addlicense) and caches pre-commit for speed.
+- CI initializes Terraform with `-backend=false` so it does not need S3/DynamoDB credentials; it validates formatting and generates a plan artifact for PRs.
+
+---
+
+## Documentation
+
+Expanded docs live in `docs/`:
+- `docs/architecture.md` — architecture overview and data flow
+- `docs/contributing.md` — contribution and testing workflow
+- `docs/troubleshooting.md` — extended troubleshooting (ENIs, locks, etc.)
+
+---
+
+## License
+
+Apache License 2.0 — see LICENSE.
+
+---
+
+## Author
+
+**Darian Lee** — Infrastructure Engineer & Cloud Consultant
+[LinkedIn](https://www.linkedin.com/in/darian-873)
+</file>
+
+</files>

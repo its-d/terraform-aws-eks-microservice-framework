@@ -39,6 +39,8 @@ module "eks" {
   enable_irsa                              = true
   iam_role_arn                             = var.cluster_role_arn
 
+  cluster_enabled_log_types = ["api", "audit", "authenticator"]
+
   vpc_id     = var.vpc_id
   subnet_ids = var.private_subnet_ids
 

@@ -58,49 +58,36 @@ Symptoms
 
 ---
 
-## Clean Destroy / Resource-in-use Errors (ENIs, Target Groups)
+## Clean Destroy / VPC DependencyViolation
 
-Cause:
-- K8s controllers or pods left AWS resources attached (ENIs, target groups). Terraform cannot delete VPCs/subnets/security groups with attached resources.
+`make destroy` runs pre-cleanup (Helm uninstall, K8s resources, VPC endpoints, ALBs, ENIs; removes Helm/K8s from state), state-rm-vpc, terraform destroy, and force-delete-vpc. If destroy fails with `DependencyViolation: The vpc 'vpc-xxx' has dependencies`:
 
-Recommended Steps:
-1. Delete Kubernetes resources:
+1. **Retry with cleanup** (pre-destroy now cleans VPC endpoints and retries ENI cleanup):
 ```bash
-kubectl delete -f k8s/service-hello-world.yaml
-kubectl delete -f k8s/deployment-hello-world.yaml
-# If Grafana is installed:
-kubectl -n monitoring delete deploy grafana
-helm -n monitoring uninstall grafana  # if installed via helm
-```
-1. Wait for pods and ENIs to be removed. Verify:
-
-- Kubernetes:
-```bash
-kubectl get pods -A
+make destroy-retry
 ```
 
-- AWS:
-  - EC2 Console -> Network Interfaces (Search for cluster name tags)
-  - ELB Console -> Target Groups -> Targets (ensure none remain healthy/attached)
-
-1. If Terraform still errors, use:
+2. **Verify resources**:
 ```bash
-terraform state list   # find stuck resource addresses
-terraform state rm <address>  # remove resource from state (dangerous; last resort)
-terraform destroy -auto-approve
+aws ec2 describe-vpc-endpoints --filters "Name=vpc-id,Values=vpc-xxx" --region us-east-1
+aws ec2 describe-network-interfaces --filters Name=vpc-id,Values=vpc-xxx --region us-east-1
+aws elbv2 describe-load-balancers --region us-east-1  # filter by VPC in console
 ```
-Note: Use state rm only if you accept that Terraform will no longer track that resource.
+
+3. **Last resort** (orphan VPC from state, force-delete from AWS):
+```bash
+bash scripts/state-rm-vpc.sh
+terraform destroy -var-file=terraform.tfvars -refresh=false
+bash scripts/force-delete-vpc.sh
+```
 
 ---
 
-## State Lock / DynamoDB Lock Issues
+## State Lock Issues
 
-Symptoms:
-- terraform init or apply fails due to a stale lock.
-
-Fix:
-- Use DynamoDB console to inspect lock record (table used for locking). Remove lock if you're certain no concurrent process is using it.
-- Configure proper IAM permissions for the user/role that runs Terraform (DynamoDB: PutItem/DeleteItem).
+If using DynamoDB for state locking and you see a stale lock:
+- Inspect the lock in DynamoDB console; remove if no concurrent process is running.
+- Ensure IAM permissions for DynamoDB (PutItem/DeleteItem).
 
 ---
 

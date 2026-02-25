@@ -16,3 +16,8 @@ output "alb_irsa_role_arn" {
   description = "IRSA role ARN for the AWS Load Balancer Controller"
   value       = aws_iam_role.alb_irsa.arn
 }
+
+output "grafana_irsa_role_arn" {
+  description = "IRSA role ARN for Grafana CloudWatch access"
+  value       = aws_iam_role.grafana_irsa.arn
+}

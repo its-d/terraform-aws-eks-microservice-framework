@@ -43,7 +43,7 @@ data "aws_iam_policy_document" "eks_cluster_iam_policy_document" {
 -------------------------
 */
 resource "aws_iam_role" "eks_cluster_role" {
-  name               = "eks_cluster_role"
+  name               = "${var.identifier}-eks-cluster-role"
   assume_role_policy = data.aws_iam_policy_document.eks_cluster_iam_policy_document.json
   tags               = var.common_tags
 }
@@ -87,7 +87,7 @@ data "aws_iam_policy_document" "eks_pod_execution_role_iam_policy_document" {
 -------------------------
 */
 resource "aws_iam_role" "eks_pod_execution_role" {
-  name               = "eks_pod_execution_role"
+  name               = "${var.identifier}-eks-pod-execution-role"
   assume_role_policy = data.aws_iam_policy_document.eks_pod_execution_role_iam_policy_document.json
   tags               = var.common_tags
 }
