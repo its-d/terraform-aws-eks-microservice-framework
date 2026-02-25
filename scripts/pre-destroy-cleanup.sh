@@ -45,6 +45,11 @@ else
   echo "  → No cluster_name output; skipping K8s cleanup."
 fi
 
+# Remove Helm/K8s resources from state so terraform destroy doesn't need cluster access
+echo "  → Removing Helm/K8s resources from Terraform state..."
+terraform state rm helm_release.aws_load_balancer_controller 2>/dev/null || true
+terraform state rm 'module.grafana[0]' 2>/dev/null || true
+
 # --- AWS network cleanup ---
 REGION="${REGION:-$(terraform output -raw region 2>/dev/null || true)}"
 [ -z "$REGION" ] && REGION="${AWS_REGION:-${AWS_DEFAULT_REGION:-us-east-1}}"

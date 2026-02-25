@@ -62,3 +62,10 @@ variable "certificate_arn" {
   description = "ACM certificate ARN for Grafana HTTPS. Required when enable_https is true."
   default     = ""
 }
+
+# tflint-ignore: terraform_unused_declarations
+variable "self_signed_certificate_arn" {
+  type        = string
+  description = "Deprecated: use certificate_arn. Kept for tfvars compatibility."
+  default     = ""
+}

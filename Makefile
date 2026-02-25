@@ -65,7 +65,7 @@ destroy: _guard_tfvars
 	@echo "============================> Removing VPC from state (prevents DependencyViolation)"
 	@bash scripts/state-rm-vpc.sh
 	@echo "============================> Destroying"
-	@$(TF) destroy -var-file=$(TFVARS) -refresh=true -lock-timeout=5m
+	@$(TF) destroy -var-file=$(TFVARS) -refresh=false -lock-timeout=5m
 	@echo "============================> Force-deleting orphaned VPC"
 	@bash scripts/force-delete-vpc.sh
 
@@ -76,7 +76,7 @@ destroy-retry: _guard_tfvars
 	@echo "============================> Removing VPC from state"
 	@bash scripts/state-rm-vpc.sh
 	@echo "============================> Destroying"
-	@$(TF) destroy -var-file=$(TFVARS) -refresh=true -lock-timeout=5m
+	@$(TF) destroy -var-file=$(TFVARS) -refresh=false -lock-timeout=5m
 	@echo "============================> Force-deleting orphaned VPC"
 	@bash scripts/force-delete-vpc.sh
 
