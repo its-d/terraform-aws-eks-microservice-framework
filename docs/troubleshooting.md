@@ -60,7 +60,7 @@ Symptoms
 
 ## Clean Destroy / VPC DependencyViolation
 
-`make destroy` runs a pre-cleanup script that uninstalls Helm releases, deletes K8s resources, and removes VPC endpoints, ALBs, and ENIs before `terraform destroy`. If destroy fails with `DependencyViolation: The vpc 'vpc-xxx' has dependencies`:
+`make destroy` runs pre-cleanup (Helm uninstall, K8s resources, VPC endpoints, ALBs, ENIs; removes Helm/K8s from state), state-rm-vpc, terraform destroy, and force-delete-vpc. If destroy fails with `DependencyViolation: The vpc 'vpc-xxx' has dependencies`:
 
 1. **Retry with cleanup** (pre-destroy now cleans VPC endpoints and retries ENI cleanup):
 ```bash
@@ -77,7 +77,7 @@ aws elbv2 describe-load-balancers --region us-east-1  # filter by VPC in console
 3. **Last resort** (orphan VPC from state, force-delete from AWS):
 ```bash
 bash scripts/state-rm-vpc.sh
-terraform destroy -var-file=terraform.tfvars
+terraform destroy -var-file=terraform.tfvars -refresh=false
 bash scripts/force-delete-vpc.sh
 ```
 

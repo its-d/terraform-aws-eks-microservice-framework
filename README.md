@@ -45,7 +45,7 @@ make apply
 
 ### Required variables
 
-- **region** — AWS region (default: `us-east-1`)
+- **region** — AWS region (e.g., `us-east-1`)
 - **identifier** — Short prefix for resource names (e.g., `myapp`)
 
 ### Grafana credentials
@@ -66,7 +66,8 @@ On first `make plan`, if `grafana_admin_user_arn` and `grafana_admin_pwd_arn` ar
 | `init` | Initialize Terraform (requires `backend.hcl`) |
 | `plan` | Plan (prompts for Grafana creds if needed) |
 | `apply` | Apply plan |
-| `destroy` | Pre-cleanup + destroy |
+| `destroy` | Pre-cleanup, state-rm-vpc, destroy, force-delete-vpc |
+| `destroy-retry` | Re-run cleanup + destroy (when VPC DependencyViolation) |
 | `outputs` | Show Terraform outputs |
 | `grafana-url` | Show Grafana access info |
 | `validate` | Validate config |
@@ -79,7 +80,7 @@ On first `make plan`, if `grafana_admin_user_arn` and `grafana_admin_pwd_arn` ar
 
 ## Destroy
 
-`make destroy` runs a pre-cleanup script (Helm uninstall, K8s resources, ALBs, ENIs) before `terraform destroy`. No manual steps required.
+`make destroy` runs: (1) pre-cleanup (Helm uninstall, K8s resources, VPC endpoints, ALBs, ENIs; removes Helm/K8s from state), (2) state-rm-vpc, (3) terraform destroy, (4) force-delete-vpc. No manual steps required. If VPC DependencyViolation occurs, run `make destroy-retry`.
 
 ---
 
@@ -102,6 +103,8 @@ On first `make plan`, if `grafana_admin_user_arn` and `grafana_admin_pwd_arn` ar
 │   └── grafana/         # Grafana Helm + ingress
 └── scripts/
     ├── pre-destroy-cleanup.sh
+    ├── state-rm-vpc.sh
+    ├── force-delete-vpc.sh
     └── setup-grafana-secrets.sh
 ```
 
@@ -118,7 +121,6 @@ Control plane logs (API, audit, authenticator) are sent to CloudWatch. Use Grafa
 - [docs/architecture.md](docs/architecture.md) — Architecture overview
 - [docs/contributing.md](docs/contributing.md) — Contribution workflow
 - [docs/troubleshooting.md](docs/troubleshooting.md) — Common issues
-- [docs/REFACTOR_SPEC.md](docs/REFACTOR_SPEC.md) — Refactor specification
 
 ---
 
