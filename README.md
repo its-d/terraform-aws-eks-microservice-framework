@@ -84,8 +84,55 @@ On first `make plan`, if `grafana_admin_user_arn` and `grafana_admin_pwd_arn` ar
 
 ---
 
-## Repository Structure
+## Deploying with the Makefile (replaces earlier manual deploy guidance)
 
+This repository uses the Makefile workflow for the recommended deploy steps. The Makefile drives Terraform init/plan/apply and other convenience tasks so you do not need to run ad-hoc kubectl/helm commands as part of the standard infra deploy.
+
+Typical flow (from a fresh machine)
+1. Clone:
+```bash
+git clone https://github.com/its-d/terraform-aws-eks-microservice-framework.git
+cd terraform-aws-eks-microservice-framework
+```
+2. Configure Virtual Environment
+```bash
+# Create Virtual Environment
+python3 -m venv .venv
+
+# Enter/Use the Virtual Environment
+source .venv/bin/activate
+
+# Install packages
+pip install -r requirements.txt
+```
+
+3. Set your AWS_PROFILE/Credentials
+```bash
+export AWS_PROFILE=<PROFILE_NAME>
+```
+
+5. Create env folder & set ENV to directory (defaults to "dev")
+```bash
+mkdir -p env/<DIRECTORY_NAME>
+export ENV=<DIRECTORY_NAME>
+```
+
+6. Create `backend.hcl` locally (example above), do NOT commit it.
+```bash
+cp backend.hcl.example env/dev/backend.hcl
+# Edit env/dev/backend.hcl - populate required fields (see section above)
+```
+
+7. Create environment tfvars:
+```bash
+cp terraform.tfvars.example env/dev/terraform.tfvars
+# Edit env/dev/terraform.tfvars - populate required fields (see section above)
+```
+
+8. Confirm your IP (REQUIRED)
+```bash
+# You can set this within the .tfvars to prevent the need to modify it with each run
+make _confirm_ip
 ```
 .
 ├── main.tf              # Root orchestration
@@ -127,3 +174,11 @@ Control plane logs (API, audit, authenticator) are sent to CloudWatch. Use Grafa
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE).
+Licensed under the Apache License, Version 2.0. See LICENSE for details.
+
+---
+
+## Author
+
+**Darian Lee** — Infrastructure Engineer & Cloud Consultant
+[LinkedIn](https://www.linkedin.com/in/darian-873)
