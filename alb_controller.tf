@@ -68,7 +68,6 @@ resource "helm_release" "aws_load_balancer_controller" {
 
   depends_on = [
     module.iam_irsa,
-    null_resource.write_kubeconfig,
-    module.eks
+    time_sleep.wait_for_eks
   ]
 }

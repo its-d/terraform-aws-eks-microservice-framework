@@ -16,25 +16,29 @@
 -------------------------
 * Module: VPC
 * Description: Creates a VPC with public and private subnets across two AZs.
-* Variables required:
-  - identifier
-  - environment
-  - common_tags
+* AZs are derived from region when not explicitly provided.
 -------------------------
 */
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+locals {
+  azs = length(var.azs) > 0 ? var.azs : slice(data.aws_availability_zones.available.names, 0, 2)
+}
+
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "~> 5.8"
 
   name = "${var.identifier}-${var.environment}-vpc"
-  cidr = "10.0.0.0/16"
+  cidr = var.cidr
 
-  # Two AZs in us-east-1
-  azs = ["us-east-1a", "us-east-1b"]
+  azs = local.azs
 
-  # 2 public + 2 private subnets (any /24s are fine)
-  public_subnets  = ["10.0.0.0/24", "10.0.1.0/24"]
-  private_subnets = ["10.0.100.0/24", "10.0.101.0/24"]
+  # 2 public + 2 private subnets (derived from cidr)
+  public_subnets  = [cidrsubnet(var.cidr, 8, 0), cidrsubnet(var.cidr, 8, 1)]
+  private_subnets = [cidrsubnet(var.cidr, 8, 100), cidrsubnet(var.cidr, 8, 101)]
 
   # Basics you almost always want
   enable_dns_support      = true

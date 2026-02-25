@@ -36,7 +36,7 @@
 - Framework now supports:
   - Full **EKS Fargate-only** environment (no EC2 workers)
   - **ALB ingress** via AWS Load Balancer Controller
-  - **Grafana deployment** with Helm and namespace isolation
+  - **Grafana deployment** with Helm and namespace isolation (ephemeral storage; dashboards do not persist across pod restarts)
   - **HTTPS toggle** using `enable_https` in `.tfvars`
   - Support for both **IAM server certificates** and **ACM certificates**
 - Security and networking:

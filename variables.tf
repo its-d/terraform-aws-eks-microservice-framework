@@ -11,50 +11,54 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 variable "region" {
   type        = string
-  description = "AWS Region to be associated with the deployment."
-  default     = "us-east-1"
+  description = "AWS region (e.g., us-east-1)."
 }
 
 variable "environment" {
   type        = string
-  description = "The environment for the resources (e.g., dev, staging, prod)."
+  description = "Environment name (e.g., dev, staging, prod)."
+  default     = "dev"
 }
 
 variable "owner" {
   type        = string
-  description = "The owner of the resources."
+  description = "Owner tag for resources."
+  default     = ""
 }
 
 variable "identifier" {
   type        = string
-  description = "A unique identifier for the resources."
+  description = "Short prefix for resource names (e.g., myapp, sample)."
 }
 
 variable "public_access_cidrs" {
   type        = list(string)
-  description = "CIDRs allowed to reach the public EKS API"
+  description = "CIDRs allowed to reach the public EKS API. Default allows all (IAM is the control)."
   default     = ["0.0.0.0/0"]
 }
 
 variable "grafana_admin_user_arn" {
-  description = "ARN of the secret storing the Grafana admin username"
   type        = string
+  description = "ARN of the Secrets Manager secret storing the Grafana admin username. Created by 'make plan' prompt if missing."
+  default     = ""
 }
 
 variable "grafana_admin_pwd_arn" {
-  description = "ARN of the secret storing the Grafana admin password"
   type        = string
-}
-
-variable "self_signed_certificate_arn" {
-  description = "ARN of the secret storing the TLS certificate for the ALB"
-  type        = string
+  description = "ARN of the Secrets Manager secret storing the Grafana admin password. Created by 'make plan' prompt if missing."
+  default     = ""
 }
 
 variable "enable_https" {
-  type    = bool
-  default = false
+  type        = bool
+  description = "Enable HTTPS for Grafana ALB. Requires certificate_arn."
+  default     = false
+}
+
+variable "certificate_arn" {
+  type        = string
+  description = "ACM certificate ARN for Grafana HTTPS. Required when enable_https is true."
+  default     = ""
 }

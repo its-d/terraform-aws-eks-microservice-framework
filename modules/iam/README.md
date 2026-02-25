@@ -20,7 +20,7 @@ module "iam" {
 ```
 
 Key inputs
-- identifier — string; prefix for role names.
+- identifier — string; prefix for role names (default: "main").
 - common_tags — map(string); tags applied to IAM resources.
 
 Key outputs (examples)

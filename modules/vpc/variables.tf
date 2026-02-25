@@ -28,3 +28,15 @@ variable "common_tags" {
   description = "A map of common tags to apply to all resources."
   default     = {}
 }
+
+variable "azs" {
+  type        = list(string)
+  description = "Availability zones for subnets. If empty, first two AZs from region are used."
+  default     = []
+}
+
+variable "cidr" {
+  type        = string
+  description = "VPC CIDR block."
+  default     = "10.0.0.0/16"
+}

@@ -11,27 +11,24 @@ What this module provides
 Quick usage (root wiring)
 ```hcl
 module "grafana" {
-  source                 = "./modules/grafana"
-  identifier             = var.identifier
-  grafana_admin_user     = var.grafana_admin_user
-  grafana_admin_password = var.grafana_admin_password  # recommended: pull from Secrets Manager/SSM
+  source                      = "./modules/grafana"
+  region                      = var.region
+  grafana_user_arn            = var.grafana_admin_user_arn
+  grafana_pwd_arn             = var.grafana_admin_pwd_arn
+  self_signed_certificate_arn = var.self_signed_certificate_arn
+  enable_https                = var.enable_https
 }
 ```
 
 Inputs & secrets
-- grafana_admin_user — string; admin username (recommend storing in Secrets Manager / SSM rather than tfvars).
-- grafana_admin_password — sensitive; recommend reading from AWS Secrets Manager or SSM Parameter Store with Terraform data sources.
-- identifier — string; naming prefix.
+- grafana_user_arn — ARN of the Secrets Manager secret storing the Grafana admin username.
+- grafana_pwd_arn — ARN of the Secrets Manager secret storing the Grafana admin password.
+- region — AWS region.
+- self_signed_certificate_arn — ARN of the TLS certificate for ALB (when enable_https is true).
+- enable_https — bool; enable HTTPS on the Grafana ingress.
 
 Secrets recommendation (already adopted)
-- Retrieve admin credentials from AWS Secrets Manager or SSM, e.g.:
-```hcl
-data "aws_ssm_parameter" "grafana_admin_password" {
-  name           = "/project/${var.environment}/grafana_admin_password"
-  with_decryption = true
-}
-```
-- Do not hardcode sensitive values into env tfvars; prefer CI secret injection or Secrets Manager.
+- Store admin credentials in AWS Secrets Manager. Reference via ARNs in tfvars. Do not hardcode in tfvars.
 
 Troubleshooting
 - Check Grafana pod logs: `kubectl -n monitoring logs -l app.kubernetes.io/name=grafana`

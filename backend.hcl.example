@@ -1,5 +1,7 @@
-bucket         = "bucket-name"
-key            = "/path/to/file.tfstate"
-region         = "region"
-dynamodb_table = "table-name"
-encrypt        = true
+# Backend configuration example
+# Copy to backend.hcl and fill in. Do NOT commit backend.hcl.
+
+bucket = "your-terraform-state-bucket"
+key    = "terraform-aws-eks-microservice-framework/terraform.tfstate"
+region = "us-east-1"
+encrypt = true

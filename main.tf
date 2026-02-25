@@ -38,6 +38,10 @@ terraform {
       source  = "hashicorp/null"
       version = "~> 3.2"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.11"
+    }
   }
 
   backend "s3" {}
@@ -59,6 +63,16 @@ resource "null_resource" "write_kubeconfig" {
   provisioner "local-exec" {
     command = "aws eks update-kubeconfig --name ${module.eks.cluster_name} --region ${var.region}"
   }
+}
+
+# Wait for EKS cluster and CoreDNS to be ready before Helm releases
+resource "time_sleep" "wait_for_eks" {
+  create_duration = "180s"
+
+  depends_on = [
+    module.eks,
+    null_resource.write_kubeconfig
+  ]
 }
 
 data "aws_eks_cluster" "eks" {
@@ -98,7 +112,7 @@ locals {
   common_tags = {
     Identifier  = var.identifier
     Environment = var.environment
-    Owner       = var.owner
+    Owner       = var.owner != "" ? var.owner : "terraform"
   }
 }
 
@@ -128,6 +142,7 @@ and Pod execution role
 */
 module "iam" {
   source      = "./modules/iam"
+  identifier  = var.identifier
   common_tags = local.common_tags
 }
 
@@ -151,14 +166,15 @@ Module responsible for Grafana deployment
 -------------------------
 */
 module "grafana" {
-  source                      = "./modules/grafana"
-  region                      = var.region
-  enable_https                = var.enable_https
-  grafana_user_arn            = var.grafana_admin_user_arn
-  grafana_pwd_arn             = var.grafana_admin_pwd_arn
-  self_signed_certificate_arn = var.self_signed_certificate_arn
+  count                 = var.grafana_admin_user_arn != "" && var.grafana_admin_pwd_arn != "" ? 1 : 0
+  source                = "./modules/grafana"
+  region                = var.region
+  enable_https          = var.enable_https
+  grafana_user_arn      = var.grafana_admin_user_arn
+  grafana_pwd_arn       = var.grafana_admin_pwd_arn
+  certificate_arn       = var.certificate_arn
+  grafana_irsa_role_arn = module.iam_irsa.grafana_irsa_role_arn
   depends_on = [
-    module.eks,
     helm_release.aws_load_balancer_controller
   ]
 }

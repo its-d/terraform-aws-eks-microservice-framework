@@ -16,6 +16,7 @@ terraform.tfplan
 .terraformrc
 terraform.rc
 *.tfplan
+plan.tfplan
 .make_env_public_access
 .last_vpc_id
 
@@ -42,6 +43,8 @@ venv/
 # --- CI / LOCAL ENVIRONMENT ---
 .envrc
 .local/
+# fix-security: backend.hcl excluded by *.hcl — never commit real backend config
+# Note: backend.hcl.example and terraform.tfvars.example are NOT ignored (end in .example)
 *.hcl
 *.lock.hcl
 .idea/
